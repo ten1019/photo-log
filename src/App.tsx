@@ -1,5 +1,6 @@
 import { useAuth } from './lib/AuthContext'
 import { Auth } from './components/Auth'
+import { MyPage } from './components/MyPage'
 import { supabase } from './lib/supabase'
 
 function App() {
@@ -9,9 +10,12 @@ function App() {
   if (!session) return <Auth />
 
   return (
-    <div style={{ padding: 40, fontFamily: 'sans-serif' }}>
-      <p>ログイン中: {session.user.email}</p>
-      <button onClick={() => supabase.auth.signOut()}>ログアウト</button>
+    <div style={{ fontFamily: 'sans-serif' }}>
+      <div style={{ padding: '12px 40px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
+        <span>{session.user.email}</span>
+        <button onClick={() => supabase.auth.signOut()}>ログアウト</button>
+      </div>
+      <MyPage />
     </div>
   )
 }
