@@ -1,0 +1,108 @@
+/* ===== レイアウト ===== */
+.page {
+  font-family: sans-serif;
+  color: #1a1a1a;
+}
+
+/* 上部メトリクス */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid #e5e5e5;
+}
+.metric {
+  padding: 28px 32px;
+  border-right: 1px solid #e5e5e5;
+}
+.metric:last-child { border-right: none; }
+.metricLabel {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #888;
+  text-transform: uppercase;
+}
+.metricValue {
+  font-size: 40px;
+  font-weight: 700;
+  margin-top: 6px;
+  line-height: 1;
+}
+.metricUnit {
+  font-size: 14px;
+  font-weight: 400;
+  color: #888;
+  margin-left: 6px;
+}
+
+/* 2カラム本体 */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.column {
+  padding: 32px;
+}
+.column:first-child { border-right: 1px solid #e5e5e5; }
+
+.sectionTitle {
+  text-align: left;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a2b3c;          /* 英字部分：濃いネイビー */
+  margin-bottom: 20px;
+}
+.sectionTitle span {
+  color: #999;             /* 日本語部分：グレー */
+  font-weight: 400;
+  font-size: 12px;         /* 少し小さく */
+  margin-left: 8px;
+}
+
+/* 機材リスト */
+.list { list-style: none; padding: 0; margin: 0; }
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+.itemName { font-size: 15px; font-weight: 600; }
+.itemNote { font-size: 13px; color: #999; margin-top: 3px; }
+.itemCount { font-size: 13px; color: #999; margin-right: 16px; }
+.deleteBtn {
+  border: none;
+  background: none;
+  color: #bbb;
+  cursor: pointer;
+  font-size: 18px;
+}
+.deleteBtn:hover { color: #e00; }
+
+.empty { color: #999; font-size: 14px; }
+
+/* 追加フォーム */
+.form { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.addBtn {
+  align-self: flex-end;
+  padding: 10px 20px;
+  background: #037FB4;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.addBtn:hover { background: #095a86; }
+.addBtn:disabled { opacity: 0.5; cursor: default; }
+
+.rowEnd { display: flex; gap: 8px; }
+.rowEnd .input { flex: 1; }

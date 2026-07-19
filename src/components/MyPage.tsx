@@ -1,189 +1,157 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
+import styles from './MyPage.module.css'
 
-type Camera = {
-  id: string
-  name: string
-  created_at: string
-}
-
-type Lens = {
-  id: string
-  name: string
-  note: string | null
-  created_at: string
-}
+type Camera = { id: string; name: string; note: string | null; created_at: string }
+type Lens = { id: string; name: string; note: string | null; created_at: string }
 
 export function MyPage() {
   const { session } = useAuth()
   const [cameras, setCameras] = useState<Camera[]>([])
-  const [name, setName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [lenses, setLenses] = useState<Lens[]>([])
+  const [camName, setCamName] = useState('')
+  const [camNote, setCamNote] = useState('')
   const [lensName, setLensName] = useState('')
   const [lensNote, setLensNote] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  // 一覧を取得する関数
   async function fetchCameras() {
-    const { data, error } = await supabase
-      .from('cameras')
-      .select('*')
-      .order('created_at', { ascending: true })
-
+    const { data, error } = await supabase.from('cameras').select('*').order('created_at', { ascending: true })
     if (error) setError(error.message)
     else setCameras(data ?? [])
   }
-
-  // 初回表示時に一覧を読み込む
-  useEffect(() => {
-    fetchCameras()
-    fetchLenses()
-  }, [])
-
-  // ボディを1件追加する
-  async function addCamera() {
-    if (!name.trim()) return
-    setLoading(true)
-    setError('')
-
-    const { error } = await supabase.from('cameras').insert({
-      name: name.trim(),
-      user_id: session!.user.id, // ← 誰の機材か。RLSのため必須
-    })
-
-    if (error) {
-      setError(error.message)
-    } else {
-      setName('')        // 入力欄を空に
-      await fetchCameras() // 一覧を取り直す
-    }
-    setLoading(false)
-  }
-
-  // ボディを1件削除する
-  async function deleteCamera(id: string) {
-    const { error } = await supabase.from('cameras').delete().eq('id', id)
-    if (error) setError(error.message)
-    else await fetchCameras() // 一覧を取り直す
-  }
-
-  // レンズの関数
   async function fetchLenses() {
-    const { data, error } = await supabase
-      .from('lenses')
-      .select('*')
-      .order('created_at', { ascending: true })
+    const { data, error } = await supabase.from('lenses').select('*').order('created_at', { ascending: true })
     if (error) setError(error.message)
     else setLenses(data ?? [])
   }
+  useEffect(() => { fetchCameras(); fetchLenses() }, [])
 
-  async function addLens() {
-    if (!lensName.trim()) return
-    setLoading(true)
-    setError('')
-    const { error } = await supabase.from('lenses').insert({
-      name: lensName.trim(),
-      note: lensNote.trim() || null,
-      user_id: session!.user.id,
+  async function addCamera() {
+    if (!camName.trim()) return
+    setLoading(true); setError('')
+    const { error } = await supabase.from('cameras').insert({
+      name: camName.trim(), note: camNote.trim() || null, user_id: session!.user.id,
     })
-    if (error) {
-      setError(error.message)
-    } else {
-      setLensName('')
-      setLensNote('')
-      await fetchLenses()
-    }
+    if (error) setError(error.message)
+    else { setCamName(''); setCamNote(''); await fetchCameras() }
     setLoading(false)
   }
-
+  async function deleteCamera(id: string) {
+    const { error } = await supabase.from('cameras').delete().eq('id', id)
+    if (error) setError(error.message); else await fetchCameras()
+  }
+  async function addLens() {
+    if (!lensName.trim()) return
+    setLoading(true); setError('')
+    const { error } = await supabase.from('lenses').insert({
+      name: lensName.trim(), note: lensNote.trim() || null, user_id: session!.user.id,
+    })
+    if (error) setError(error.message)
+    else { setLensName(''); setLensNote(''); await fetchLenses() }
+    setLoading(false)
+  }
   async function deleteLens(id: string) {
     const { error } = await supabase.from('lenses').delete().eq('id', id)
-    if (error) setError(error.message)
-    else await fetchLenses()
+    if (error) setError(error.message); else await fetchLenses()
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h2>登録ボディ</h2>
-
-      {/* 一覧 */}
-      {cameras.length === 0 ? (
-        <p style={{ color: '#888' }}>まだ登録がありません</p>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {cameras.map((c) => (
-            <li key={c.id} style={{ padding: 10, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{c.name}</span>
-              <button
-                onClick={() => deleteCamera(c.id)}
-                style={{ border: 'none', background: 'none', color: '#999', cursor: 'pointer', fontSize: 18 }}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* 追加フォーム */}
-      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <input
-          style={{ flex: 1, padding: 8 }}
-          placeholder="ボディ名（例: LUMIX G9PRO）"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button onClick={addCamera} disabled={loading}>
-          {loading ? '追加中...' : '＋ 追加'}
-        </button>
-      </div>
-
-      <h2 style={{ marginTop: 40 }}>登録レンズ</h2>
-
-      {lenses.length === 0 ? (
-        <p style={{ color: '#888' }}>まだ登録がありません</p>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {lenses.map((l) => (
-            <li key={l.id} style={{ padding: 10, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>
-                {l.name}
-                {l.note && <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>{l.note}</span>}
-              </span>
-              <button
-                onClick={() => deleteLens(l.id)}
-                style={{ border: 'none', background: 'none', color: '#999', cursor: 'pointer', fontSize: 18 }}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <input
-          style={{ padding: 8 }}
-          placeholder="レンズ名（例: LUMIX G 25mm F1.7 ASPH.）"
-          value={lensName}
-          onChange={(e) => setLensName(e.target.value)}
-        />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            style={{ flex: 1, padding: 8 }}
-            placeholder="補足（例: 単焦点）"
-            value={lensNote}
-            onChange={(e) => setLensNote(e.target.value)}
-          />
-          <button onClick={addLens} disabled={loading}>
-            {loading ? '追加中...' : '＋ 追加'}
-          </button>
+    <div className={styles.page}>
+      {/* 上部メトリクス */}
+      <div className={styles.metrics}>
+        <div className={styles.metric}>
+          <div className={styles.metricLabel}>BODYS</div>
+          <div className={styles.metricValue}>{cameras.length}<span className={styles.metricUnit}>台</span></div>
+        </div>
+        <div className={styles.metric}>
+          <div className={styles.metricLabel}>LENSES</div>
+          <div className={styles.metricValue}>{lenses.length}<span className={styles.metricUnit}>本</span></div>
+        </div>
+        <div className={styles.metric}>
+          <div className={styles.metricLabel}>TOTAL SHOTS</div>
+          <div className={styles.metricValue}>0<span className={styles.metricUnit}>枚</span></div>
+        </div>
+        <div className={styles.metric}>
+          <div className={styles.metricLabel}>SINCE</div>
+          <div className={styles.metricValue}>2024<span className={styles.metricUnit}>年</span></div>
         </div>
       </div>
 
-      {error && <p style={{ color: 'crimson', fontSize: 13 }}>{error}</p>}
+      {/* 2カラム本体 */}
+      <div className={styles.columns}>
+        {/* ボディ */}
+        <div className={styles.column}>
+          <div className={styles.sectionTitle}>BODIES<span>登録ボディ</span></div>
+          {cameras.length === 0 ? (
+            <p className={styles.empty}>まだ登録がありません</p>
+          ) : (
+            <ul className={styles.list}>
+              {cameras.map((c) => (
+                <li key={c.id} className={styles.item}>
+                  <div>
+                    <div className={styles.itemName}>{c.name}</div>
+                    {c.note && <div className={styles.itemNote}>{c.note}</div>}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span className={styles.itemCount}>0枚</span>
+                    <button className={styles.deleteBtn} onClick={() => deleteCamera(c.id)}>×</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className={styles.form}>
+            <input className={styles.input} placeholder="ボディ名（例: LUMIX G9PRO）"
+              value={camName} onChange={(e) => setCamName(e.target.value)} />
+            <div className={styles.rowEnd}>
+              <input className={styles.input} placeholder="補足（例: フルサイズ、画素数）"
+                value={camNote} onChange={(e) => setCamNote(e.target.value)} />
+            </div>
+            <button className={styles.addBtn} onClick={addCamera} disabled={loading}>
+              {loading ? '追加中...' : '＋ ボディを追加'}
+            </button>
+          </div>
+        </div>
+
+        {/* レンズ */}
+        <div className={styles.column}>
+          <div className={styles.sectionTitle}>LENSES<span>登録レンズ</span></div>
+          {lenses.length === 0 ? (
+            <p className={styles.empty}>まだ登録がありません</p>
+          ) : (
+            <ul className={styles.list}>
+              {lenses.map((l) => (
+                <li key={l.id} className={styles.item}>
+                  <div>
+                    <div className={styles.itemName}>{l.name}</div>
+                    {l.note && <div className={styles.itemNote}>{l.note}</div>}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span className={styles.itemCount}>0枚</span>
+                    <button className={styles.deleteBtn} onClick={() => deleteLens(l.id)}>×</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className={styles.form}>
+            <input className={styles.input} placeholder="レンズ名（例: LUMIX G 25mm F1.7 ASPH.）"
+              value={lensName} onChange={(e) => setLensName(e.target.value)} />
+            <div className={styles.rowEnd}>
+              <input className={styles.input} placeholder="補足（例: 単焦点）"
+                value={lensNote} onChange={(e) => setLensNote(e.target.value)} />
+            </div>
+            <button className={styles.addBtn} onClick={addLens} disabled={loading}>
+              {loading ? '追加中...' : '＋ レンズを追加'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {error && <p style={{ color: 'crimson', fontSize: 13, padding: 16 }}>{error}</p>}
     </div>
   )
 }
