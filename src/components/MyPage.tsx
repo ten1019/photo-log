@@ -51,6 +51,13 @@ export function MyPage() {
     setLoading(false)
   }
 
+  // ボディを1件削除する
+  async function deleteCamera(id: string) {
+    const { error } = await supabase.from('cameras').delete().eq('id', id)
+    if (error) setError(error.message)
+    else await fetchCameras() // 一覧を取り直す
+  }
+
   return (
     <div style={{ maxWidth: 480, margin: '40px auto', fontFamily: 'sans-serif' }}>
       <h2>登録ボディ</h2>
@@ -61,8 +68,14 @@ export function MyPage() {
       ) : (
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {cameras.map((c) => (
-            <li key={c.id} style={{ padding: 10, borderBottom: '1px solid #eee' }}>
-              {c.name}
+            <li key={c.id} style={{ padding: 10, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{c.name}</span>
+              <button
+                onClick={() => deleteCamera(c.id)}
+                style={{ border: 'none', background: 'none', color: '#999', cursor: 'pointer', fontSize: 18 }}
+              >
+                ×
+              </button>
             </li>
           ))}
         </ul>
