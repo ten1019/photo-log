@@ -131,6 +131,30 @@ export function Record() {
     setShots((prev) => prev.map((s, i) => (i === selectedIndex ? { ...s, lensId: id } : s)))
   }
 
+  // EXIFの機種名で新しいボディを台帳に登録して、選択中の写真に紐づける
+  async function registerCameraFromExif(name: string) {
+    const { data, error } = await supabase
+      .from('cameras')
+      .insert({ name, user_id: session!.user.id })
+      .select('id, name')
+      .single()
+    if (error) { setMessage(error.message); return }
+    setCameras((prev) => [...prev, data])   // 選択肢リストに追加
+    updateCamera(data.id)                    // この写真に紐づける
+  }
+
+  // EXIFのレンズ名で新しいレンズを台帳に登録
+  async function registerLensFromExif(name: string) {
+    const { data, error } = await supabase
+      .from('lenses')
+      .insert({ name, user_id: session!.user.id })
+      .select('id, name, note')
+      .single()
+    if (error) { setMessage(error.message); return }
+    setLenses((prev) => [...prev, data])
+    updateLens(data.id)
+  }
+
   // 写真を1枚削除する（保存前なので配列から除くだけ）
   function removeShot(index: number) {
     setShots((prev) => {
@@ -275,6 +299,16 @@ export function Record() {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+              {/* EXIFに機種名があるのに、登録機材と一致してない場合 */}
+              {selectedShot.model &&
+                !cameras.some((c) => c.name === selectedShot.model) && (
+                  <button
+                    className={styles.registerBtn}
+                    onClick={() => registerCameraFromExif(selectedShot.model!)}
+                  >
+                    ＋「{selectedShot.model}」を台帳に登録
+                  </button>
+                )}
             </div>
 
             <div className={styles.field}>
@@ -289,6 +323,15 @@ export function Record() {
                   <option key={l.id} value={l.id}>{l.name}{l.note ? `（${l.note}）` : ''}</option>
                 ))}
               </select>
+              {selectedShot.lensModel &&
+                !lenses.some((l) => l.name === selectedShot.lensModel) && (
+                  <button
+                    className={styles.registerBtn}
+                    onClick={() => registerLensFromExif(selectedShot.lensModel!)}
+                  >
+                    ＋「{selectedShot.lensModel}」を台帳に登録
+                  </button>
+                )}
             </div>
 
             {/* 参考：この写真のEXIF（読み取り専用） */}
