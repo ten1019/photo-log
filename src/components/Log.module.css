@@ -73,3 +73,17 @@
 }
 .pinBtn:hover { border-color: #0b6fa4; color: #0b6fa4; }
 .pinnedSection { margin-top: 32px; }
+
+/*  削除ボタンのスタイル */
+
+.deleteBtn {
+  border: 1px solid #e5c2c2;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #c0392b;
+  font-family: inherit;
+}
+.deleteBtn:hover { background: #fdf0f0; border-color: #c0392b; }

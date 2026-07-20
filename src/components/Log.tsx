@@ -133,6 +133,47 @@ export function Log() {
     setPinnedRecords(pinned ?? [])
   }
 
+  // 選択日の記録を削除する（Storageの画像も一緒に消す）
+  async function deleteRecord() {
+    // 確認
+    if (!confirm(`${selected} の記録を削除しますか？（写真も消えます）`)) return
+
+    // 1. 選択日の記録を取得
+    const { data: rec } = await supabase
+      .from('day_records')
+      .select('id')
+      .eq('shot_date', selected)
+      .maybeSingle()
+    if (!rec) return
+
+    // 2. その記録に紐づく写真の画像パスを集める
+    const { data: ph } = await supabase
+      .from('photos')
+      .select('image_url')
+      .eq('day_record_id', rec.id)
+
+    // 3. Storageから画像ファイルを削除
+    const paths = (ph ?? []).map((p) => p.image_url)
+    if (paths.length > 0) {
+      const { error: storageErr } = await supabase.storage.from('photos').remove(paths)
+      if (storageErr) console.error('画像の削除に失敗', storageErr)
+    }
+
+    // 4. 記録を削除（photos行は cascade で自動的に消える）
+    const { error } = await supabase.from('day_records').delete().eq('id', rec.id)
+    if (error) { console.error(error); return }
+
+    // 5. 画面の状態を更新
+    setPhotos([])
+    setRecordDates((prev) => {
+      const next = new Set(prev)
+      next.delete(selected)
+      return next
+    })
+    setRecentRecords((prev) => prev.filter((r) => r.shot_date !== selected))
+    setPinnedRecords((prev) => prev.filter((p) => p.shot_date !== selected))
+  }
+
   // 選択中の日がピン済みか
   const isSelectedPinned = pinnedRecords.some((p) => p.shot_date === selected)
 
@@ -162,7 +203,7 @@ export function Log() {
             </ul>
           )}
         </div>
-        
+
       </div>
 
       {/* 右：選択日の写真 */}
@@ -170,9 +211,14 @@ export function Log() {
         <div className={styles.dayHead}>
           <h2 className={styles.dayTitle}>{selected}</h2>
           {recordDates.has(selected) && (
-            <button className={styles.pinBtn} onClick={togglePin}>
-              {isSelectedPinned ? '★ ピン留め中' : '☆ ピン留め'}
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className={styles.pinBtn} onClick={togglePin}>
+                {isSelectedPinned ? '★ ピン留め中' : '☆ ピン留め'}
+              </button>
+              <button className={styles.deleteBtn} onClick={deleteRecord}>
+                削除
+              </button>
+            </div>
           )}
         </div>
 
