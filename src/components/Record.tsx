@@ -122,6 +122,8 @@ export function Record() {
           user_id: userId,
           day_record_id: recordId,
           image_url: path,
+          camera_model: s.model ?? null,
+          lens_model: s.lensModel ?? null,
           focal_length: s.focalLength ?? null,
           aperture: s.fNumber ?? null,
           exposure_time: s.exposureTime ?? null,
