@@ -3,7 +3,9 @@ import { useAuth } from './lib/AuthContext'
 import { Auth } from './components/Auth'
 import { MyPage } from './components/MyPage'
 import { Nav } from './components/Nav'
+import { Record } from './components/Record'
 import type { Screen } from './components/Nav'
+import { Log } from './components/Log'
 
 function App() {
   const { session, loading } = useAuth()
@@ -16,9 +18,9 @@ function App() {
     <div>
       <Nav current={screen} onChange={setScreen} />
       {screen === 'home' && <Placeholder title="ホーム" />}
-      {screen === 'log' && <Placeholder title="ログ" />}
+      {screen === 'log' && <Log/>}
       {screen === 'mypage' && <MyPage />}
-      {screen === 'record' && <Placeholder title="記録する" />}
+      {screen === 'record' && <Record />}
     </div>
   )
 }
