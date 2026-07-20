@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import exifr from 'exifr'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
@@ -13,6 +13,8 @@ type Shot = {
   fileName: string
   previewUrl: string
   title: string            // ★写真ごとのタイトル
+  cameraId: string | null
+  lensId: string | null
   focalLength?: number
   fNumber?: number
   exposureTime?: number
@@ -33,6 +35,18 @@ export function Record() {
   const [message, setMessage] = useState('')
   const [shots, setShots] = useState<Shot[]>([])
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null) // ★選択中の写真
+  const [cameras, setCameras] = useState<{ id: string; name: string }[]>([])
+  const [lenses, setLenses] = useState<{ id: string; name: string; note: string | null }[]>([])
+
+  useEffect(() => {
+    async function loadGear() {
+      const { data: cams } = await supabase.from('cameras').select('id, name').order('created_at')
+      const { data: lens } = await supabase.from('lenses').select('id, name, note').order('created_at')
+      setCameras(cams ?? [])
+      setLenses(lens ?? [])
+    }
+    loadGear()
+  }, [])
 
   async function handleFiles(files: FileList | null) {
     if (!files) return
@@ -50,6 +64,8 @@ export function Record() {
           fileName: file.name,
           previewUrl: URL.createObjectURL(file),
           title: '',
+          cameraId: null,
+          lensId: null,
           focalLength: exif?.FocalLength,
           fNumber: exif?.FNumber,
           exposureTime: exif?.ExposureTime,
@@ -62,7 +78,7 @@ export function Record() {
         })
       } catch (e) {
         console.error(`${file.name} のEXIF読み取り失敗`, e)
-        newShots.push({ file, fileName: file.name, previewUrl: URL.createObjectURL(file), title: '' })
+        newShots.push({ file, fileName: file.name, previewUrl: URL.createObjectURL(file), title: '', cameraId: null, lensId: null })
       }
     }
 
@@ -85,6 +101,15 @@ export function Record() {
     setShots((prev) =>
       prev.map((s, i) => (i === selectedIndex ? { ...s, title: value } : s))
     )
+  }
+
+  function updateCamera(id: string | null) {
+    if (selectedIndex === null) return
+    setShots((prev) => prev.map((s, i) => (i === selectedIndex ? { ...s, cameraId: id } : s)))
+  }
+  function updateLens(id: string | null) {
+    if (selectedIndex === null) return
+    setShots((prev) => prev.map((s, i) => (i === selectedIndex ? { ...s, lensId: id } : s)))
   }
 
   // 写真を1枚削除する（保存前なので配列から除くだけ）
@@ -138,6 +163,8 @@ export function Record() {
           day_record_id: recordId,
           image_url: path,
           title: s.title.trim() || null,      // ★タイトルを保存
+          camera_id: s.cameraId,
+          lens_id: s.lensId,
           camera_model: s.model ?? null,
           lens_model: s.lensModel ?? null,
           focal_length: s.focalLength ?? null,
@@ -217,7 +244,32 @@ export function Record() {
                 placeholder="例: カクレクマノミ"
                 value={selectedShot.title}
                 onChange={(e) => updateTitle(e.target.value)}
-              />
+              /> 
+              <div className={styles.label}>BODY<span>使用ボディ</span></div>
+              <select
+                className={styles.input}
+                value={selectedShot.cameraId ?? ''}
+                onChange={(e) => updateCamera(e.target.value || null)}
+              >
+                <option value="">選択なし</option>
+                {cameras.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <div className={styles.label}>LENS<span>使用レンズ</span></div>
+              <select
+                className={styles.input}
+                value={selectedShot.lensId ?? ''}
+                onChange={(e) => updateLens(e.target.value || null)}
+              >
+                <option value="">選択なし</option>
+                {lenses.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name}{l.note ? `（${l.note}）` : ''}</option>
+                ))}
+              </select>
             </div>
 
             {/* 参考：この写真のEXIF（読み取り専用） */}
