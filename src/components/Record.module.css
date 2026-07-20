@@ -1,0 +1,80 @@
+.wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: calc(100vh - 56px); /* ナビの高さぶんを引く */
+}
+.left {
+  padding: 32px;
+  border-right: 1px solid #e5e5e5;
+}
+.right {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.leftHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 20px;
+}
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a2b3c;
+}
+.sectionTitle span {
+  color: #999;
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 8px;
+}
+.date {
+  color: #666;
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.dropCell {
+  aspect-ratio: 3 / 2;
+  border: 1.5px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-size: 13px;
+  text-align: center;
+  padding: 12px;
+}
+
+.field { display: flex; flex-direction: column; gap: 8px; }
+.label { font-size: 15px; font-weight: 700; color: #1a2b3c; }
+.label span { color: #999; font-weight: 400; font-size: 12px; margin-left: 8px; }
+.input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+.saveBtn {
+  margin-top: auto;
+  padding: 16px;
+  background: #0b6fa4;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.saveBtn:hover { background: #095a86; }
+.saveBtn:disabled { opacity: 0.5; cursor: default; }
+.message { color: #0b6fa4; font-size: 14px; }

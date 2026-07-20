@@ -3,6 +3,7 @@ import { useAuth } from './lib/AuthContext'
 import { Auth } from './components/Auth'
 import { MyPage } from './components/MyPage'
 import { Nav } from './components/Nav'
+import { Record } from './components/Record'
 import type { Screen } from './components/Nav'
 
 function App() {
@@ -18,7 +19,7 @@ function App() {
       {screen === 'home' && <Placeholder title="ホーム" />}
       {screen === 'log' && <Placeholder title="ログ" />}
       {screen === 'mypage' && <MyPage />}
-      {screen === 'record' && <Placeholder title="記録する" />}
+      {screen === 'record' && <Record />}
     </div>
   )
 }
