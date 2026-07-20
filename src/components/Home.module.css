@@ -1,0 +1,35 @@
+.home { }
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid #e5e5e5;
+}
+.metric {
+  padding: 28px 32px;
+  border-right: 1px solid #e5e5e5;
+}
+.metric:last-child { border-right: none; }
+.metricLabel {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #888;
+  text-transform: uppercase;
+}
+.metricValue {
+  font-size: 40px;
+  font-weight: 700;
+  margin-top: 6px;
+  line-height: 1;
+  color: #1a1a1a;
+}
+.metricUnit {
+  font-size: 14px;
+  font-weight: 400;
+  color: #888;
+  margin-left: 6px;
+}
+
+@media (max-width: 860px) {
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+}
