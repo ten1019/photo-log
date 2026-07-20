@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import styles from './Home.module.css'
 import { FocalHistogram } from './FocalHistogram'
+import { ApertureHistogram } from './ApertureHistogram'
+import { TimeHistogram } from './TimeHistogram'
 
 type Photo = {
   taken_at: string | null
   focal_length: number | null
+  aperture: number | null
 }
 
 // "YYYY-MM-DD"（ローカル基準）
@@ -19,7 +22,7 @@ export function Home() {
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase.from('photos').select('taken_at, focal_length')
+      const { data, error } = await supabase.from('photos').select('taken_at, focal_length, aperture')
       if (error) console.error(error)
       else setPhotos(data ?? [])
       setLoading(false)
@@ -66,6 +69,15 @@ export function Home() {
   const focals = photos
     .map((p) => p.focal_length)
     .filter((f): f is number => f != null)
+  
+  const apertures = photos
+    .map((p) => p.aperture)
+    .filter((a): a is number => a != null)
+
+  // 撮影時刻の「時」だけを取り出す
+  const hours = photos
+    .filter((p) => p.taken_at)
+    .map((p) => new Date(p.taken_at!).getHours())
 
   if (loading) return <div style={{ padding: 40 }}>読み込み中...</div>
 
@@ -90,6 +102,8 @@ export function Home() {
       </div>
 
       <div className={styles.charts}>
+        <ApertureHistogram apertures={apertures} />
+        <TimeHistogram hours={hours} />
         <FocalHistogram focals={focals} />
       </div>
     </div>
