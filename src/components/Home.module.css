@@ -33,3 +33,15 @@
 @media (max-width: 860px) {
   .metrics { grid-template-columns: repeat(2, 1fr); }
 }
+
+/*  グラフ行のスタイル */
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid #e5e5e5;
+}
+
+@media (max-width: 860px) {
+  .charts { grid-template-columns: 1fr; }
+}

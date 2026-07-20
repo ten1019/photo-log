@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import styles from './Home.module.css'
+import { FocalHistogram } from './FocalHistogram'
 
 type Photo = {
   taken_at: string | null
+  focal_length: number | null
 }
 
 // "YYYY-MM-DD"（ローカル基準）
@@ -17,7 +19,7 @@ export function Home() {
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase.from('photos').select('taken_at')
+      const { data, error } = await supabase.from('photos').select('taken_at, focal_length')
       if (error) console.error(error)
       else setPhotos(data ?? [])
       setLoading(false)
@@ -60,6 +62,11 @@ export function Home() {
   }
   const streak = calcStreak()
 
+  // 焦点距離がある写真だけ、数値の配列に
+  const focals = photos
+    .map((p) => p.focal_length)
+    .filter((f): f is number => f != null)
+
   if (loading) return <div style={{ padding: 40 }}>読み込み中...</div>
 
   const metrics = [
@@ -80,6 +87,10 @@ export function Home() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className={styles.charts}>
+        <FocalHistogram focals={focals} />
       </div>
     </div>
   )
