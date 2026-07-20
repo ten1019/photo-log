@@ -33,3 +33,21 @@
 .model { font-size: 12px; color: #444; }
 .lens { font-size: 11px; color: #888; }
 .mono { font-family: monospace; font-size: 12px; color: #0b6fa4; }
+
+/*  最近のログのスタイル */
+
+.recentSection { margin-top: 40px; }
+.recentList { list-style: none; padding: 0; margin: 0; }
+.recentItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.recentItem:hover { border-color: #0b6fa4; background: #fafcfd; }
+.recentDate { font-weight: 600; font-size: 14px; color: #1a1a1a; }
+.recentCount { font-size: 12px; color: #999; }

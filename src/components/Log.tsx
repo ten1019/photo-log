@@ -31,13 +31,30 @@ export function Log() {
   const [selected, setSelected] = useState<string>(todayKey())
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loadingPhotos, setLoadingPhotos] = useState(false)
+  const [recentRecords, setRecentRecords] = useState<{ id: string; shot_date: string; count: number }[]>([])
 
   // 記録がある日を取得（点の表示用）
   useEffect(() => {
     async function loadDates() {
+      // 記録がある日（点の表示用）
       const { data, error } = await supabase.from('day_records').select('shot_date')
       if (error) { console.error(error); return }
       setRecordDates(new Set((data ?? []).map((r) => r.shot_date)))
+
+      // 最近の記録（写真の枚数付きで新しい順に5件）
+      const { data: recent } = await supabase
+        .from('day_records')
+        .select('id, shot_date, photos(count)')
+        .order('shot_date', { ascending: false })
+        .limit(5)
+
+      setRecentRecords(
+        (recent ?? []).map((r: any) => ({
+          id: r.id,
+          shot_date: r.shot_date,
+          count: r.photos?.[0]?.count ?? 0,
+        }))
+      )
     }
     loadDates()
   }, [])
@@ -117,6 +134,28 @@ export function Log() {
             ))}
           </div>
         )}
+
+        {/* 最近の記録 */}
+        <div className={styles.recentSection}>
+          <div className={styles.sectionTitle}>LATEST<span>最近の記録</span></div>
+          {recentRecords.length === 0 ? (
+            <p style={{ color: '#999' }}>まだ記録がありません。</p>
+          ) : (
+            <ul className={styles.recentList}>
+              {recentRecords.map((r) => (
+                <li
+                  key={r.id}
+                  className={styles.recentItem}
+                  onClick={() => setSelected(r.shot_date)}
+                >
+                  <span className={styles.recentDate}>{r.shot_date}</span>
+                  <span className={styles.recentCount}>{r.count}枚</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        
       </div>
     </div>
   )
