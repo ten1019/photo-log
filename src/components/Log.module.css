@@ -51,3 +51,25 @@
 .recentItem:hover { border-color: #0b6fa4; background: #fafcfd; }
 .recentDate { font-weight: 600; font-size: 14px; color: #1a1a1a; }
 .recentCount { font-size: 12px; color: #999; }
+
+/*  ピン留めのスタイル */
+
+.dayHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.dayHead .dayTitle { margin-bottom: 0; }
+.pinBtn {
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #666;
+  font-family: inherit;
+}
+.pinBtn:hover { border-color: #0b6fa4; color: #0b6fa4; }
+.pinnedSection { margin-top: 32px; }

@@ -32,6 +32,7 @@ export function Log() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loadingPhotos, setLoadingPhotos] = useState(false)
   const [recentRecords, setRecentRecords] = useState<{ id: string; shot_date: string; count: number }[]>([])
+  const [pinnedRecords, setPinnedRecords] = useState<{ id: string; shot_date: string }[]>([])
 
   // 記録がある日を取得（点の表示用）
   useEffect(() => {
@@ -55,6 +56,15 @@ export function Log() {
           count: r.photos?.[0]?.count ?? 0,
         }))
       )
+
+      // ピン留めした日
+      const { data: pinned } = await supabase
+        .from('day_records')
+        .select('id, shot_date')
+        .eq('pinned', true)
+        .order('shot_date', { ascending: false })
+      setPinnedRecords(pinned ?? [])
+      
     }
     loadDates()
   }, [])
@@ -98,17 +108,73 @@ export function Log() {
     loadPhotos()
   }, [selected])
 
+  // 選択日のピン留めを切り替える
+  async function togglePin() {
+    // 選択日の記録を取得
+    const { data: rec } = await supabase
+      .from('day_records')
+      .select('id, pinned')
+      .eq('shot_date', selected)
+      .maybeSingle()
+    if (!rec) return // 記録がない日はピンできない
+
+    const { error } = await supabase
+      .from('day_records')
+      .update({ pinned: !rec.pinned })
+      .eq('id', rec.id)
+    if (error) { console.error(error); return }
+
+    // ピン一覧を取り直す
+    const { data: pinned } = await supabase
+      .from('day_records')
+      .select('id, shot_date')
+      .eq('pinned', true)
+      .order('shot_date', { ascending: false })
+    setPinnedRecords(pinned ?? [])
+  }
+
+  // 選択中の日がピン済みか
+  const isSelectedPinned = pinnedRecords.some((p) => p.shot_date === selected)
+
   return (
     <div className={styles.logWrap}>
       {/* 左：カレンダー */}
       <div className={styles.calCol}>
         <div className={styles.sectionTitle}>CALENDAR<span>カレンダー</span></div>
         <Calendar recordDates={recordDates} selected={selected} onSelect={setSelected} />
+
+        {/* ピン留めした日 */}
+        <div className={styles.pinnedSection}>
+          <div className={styles.sectionTitle}>PINNED<span>ピン留めした日</span></div>
+          {pinnedRecords.length === 0 ? (
+            <p style={{ color: '#999', fontSize: 13 }}>まだありません</p>
+          ) : (
+            <ul className={styles.recentList}>
+              {pinnedRecords.map((p) => (
+                <li
+                  key={p.id}
+                  className={styles.recentItem}
+                  onClick={() => setSelected(p.shot_date)}
+                >
+                  <span className={styles.recentDate}>★ {p.shot_date}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        
       </div>
 
       {/* 右：選択日の写真 */}
       <div className={styles.dayCol}>
-        <h2 className={styles.dayTitle}>{selected}</h2>
+        <div className={styles.dayHead}>
+          <h2 className={styles.dayTitle}>{selected}</h2>
+          {recordDates.has(selected) && (
+            <button className={styles.pinBtn} onClick={togglePin}>
+              {isSelectedPinned ? '★ ピン留め中' : '☆ ピン留め'}
+            </button>
+          )}
+        </div>
 
         {loadingPhotos ? (
           <p style={{ color: '#999' }}>読み込み中...</p>
@@ -155,7 +221,7 @@ export function Log() {
             </ul>
           )}
         </div>
-        
+
       </div>
     </div>
   )
