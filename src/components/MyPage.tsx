@@ -58,6 +58,13 @@ export function MyPage() {
     if (error) setError(error.message); else await fetchLenses()
   }
 
+  // ボディ・レンズの中で一番古い登録日の「年」を求める
+  const allDates = [...cameras, ...lenses].map((x) => x.created_at)
+  const sinceYear =
+    allDates.length > 0
+      ? new Date(allDates.sort()[0]).getFullYear()
+      : new Date().getFullYear()
+
   return (
     <div className={styles.page}>
       {/* 上部メトリクス */}
@@ -76,7 +83,7 @@ export function MyPage() {
         </div>
         <div className={styles.metric}>
           <div className={styles.metricLabel}>SINCE</div>
-          <div className={styles.metricValue}>2024<span className={styles.metricUnit}>年</span></div>
+          <div className={styles.metricValue}>{sinceYear}<span className={styles.metricUnit}>年</span></div>
         </div>
       </div>
 
