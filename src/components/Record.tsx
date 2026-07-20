@@ -9,15 +9,16 @@ function today() {
 }
 
 type Shot = {
-  file: File               // ★アップロード用に実ファイルを保持
+  file: File
   fileName: string
   previewUrl: string
+  title: string            // ★写真ごとのタイトル
   focalLength?: number
   fNumber?: number
   exposureTime?: number
   iso?: number
-  takenAt?: string         // 画面表示用
-  takenAtISO?: string      // ★DB保存用（ISO形式）
+  takenAt?: string
+  takenAtISO?: string
   make?: string
   model?: string
   lensModel?: string
@@ -31,28 +32,24 @@ export function Record() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [shots, setShots] = useState<Shot[]>([])
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null) // ★選択中の写真
 
   async function handleFiles(files: FileList | null) {
     if (!files) return
     const remaining = MAX_PHOTOS - shots.length
-    if (remaining <= 0) {
-      setMessage('写真は最大4枚までです。')
-      return
-    }
+    if (remaining <= 0) { setMessage('写真は最大4枚までです。'); return }
     const selected = Array.from(files).slice(0, remaining)
-    if (files.length > remaining) {
-      setMessage(`残り${remaining}枚まで追加できます（4枚まで）。`)
-    }
+    if (files.length > remaining) setMessage(`残り${remaining}枚まで追加できます（4枚まで）。`)
 
     const newShots: Shot[] = []
     for (const file of selected) {
       try {
         const exif = await exifr.parse(file)
-        console.log(`--- ${file.name} のEXIF ---`, exif)
         newShots.push({
           file,
           fileName: file.name,
           previewUrl: URL.createObjectURL(file),
+          title: '',
           focalLength: exif?.FocalLength,
           fNumber: exif?.FNumber,
           exposureTime: exif?.ExposureTime,
@@ -65,7 +62,7 @@ export function Record() {
         })
       } catch (e) {
         console.error(`${file.name} のEXIF読み取り失敗`, e)
-        newShots.push({ file, fileName: file.name, previewUrl: URL.createObjectURL(file) })
+        newShots.push({ file, fileName: file.name, previewUrl: URL.createObjectURL(file), title: '' })
       }
     }
 
@@ -76,45 +73,63 @@ export function Record() {
         const d = new Date(firstWithDate.takenAt)
         if (!isNaN(d.getTime())) setDate(d.toISOString().slice(0, 10))
       }
+      // まだ何も選んでなければ、追加した最初の写真を選択状態に
+      if (selectedIndex === null && merged.length > 0) setSelectedIndex(0)
       return merged
     })
   }
 
+  // 選択中の写真のタイトルを更新
+  function updateTitle(value: string) {
+    if (selectedIndex === null) return
+    setShots((prev) =>
+      prev.map((s, i) => (i === selectedIndex ? { ...s, title: value } : s))
+    )
+  }
+
+  // 写真を1枚削除する（保存前なので配列から除くだけ）
+  function removeShot(index: number) {
+    setShots((prev) => {
+      const next = prev.filter((_, i) => i !== index)
+
+      // 選択中インデックスの調整
+      if (next.length === 0) {
+        setSelectedIndex(null)
+      } else if (selectedIndex !== null) {
+        if (index === selectedIndex) {
+          // 選択中の写真を消した → 先頭を選び直す
+          setSelectedIndex(0)
+        } else if (index < selectedIndex) {
+          // 選択より前を消した → 番号が1つ繰り上がる
+          setSelectedIndex(selectedIndex - 1)
+        }
+      }
+      return next
+    })
+  }
+
   async function saveRecord() {
-    if (shots.length === 0) {
-      setMessage('写真を1枚以上選んでください。')
-      return
-    }
+    if (shots.length === 0) { setMessage('写真を1枚以上選んでください。'); return }
     setSaving(true)
     setMessage('')
     const userId = session!.user.id
 
     try {
-      // 1. その日の記録を用意（あれば使う・なければ作る）
       let recordId: string
       const { data: existing } = await supabase
-        .from('day_records')
-        .select('id')
-        .eq('shot_date', date)
-        .maybeSingle()
+        .from('day_records').select('id').eq('shot_date', date).maybeSingle()
 
-      if (existing) {
-        recordId = existing.id
-      } else {
+      if (existing) recordId = existing.id
+      else {
         const { data: created, error: recErr } = await supabase
-          .from('day_records')
-          .insert({ shot_date: date, user_id: userId })
-          .select('id')
-          .single()
+          .from('day_records').insert({ shot_date: date, user_id: userId }).select('id').single()
         if (recErr) throw recErr
         recordId = created.id
       }
 
-      // 2. 各写真を Storage にアップ → photos に保存
       for (const s of shots) {
         const ext = s.file.name.split('.').pop() ?? 'jpg'
         const path = `${userId}/${recordId}/${crypto.randomUUID()}.${ext}`
-
         const { error: upErr } = await supabase.storage.from('photos').upload(path, s.file)
         if (upErr) throw upErr
 
@@ -122,6 +137,7 @@ export function Record() {
           user_id: userId,
           day_record_id: recordId,
           image_url: path,
+          title: s.title.trim() || null,      // ★タイトルを保存
           camera_model: s.model ?? null,
           lens_model: s.lensModel ?? null,
           focal_length: s.focalLength ?? null,
@@ -135,6 +151,7 @@ export function Record() {
 
       setMessage(`保存しました（${shots.length}枚）`)
       setShots([])
+      setSelectedIndex(null)
     } catch (e: any) {
       setMessage(`保存エラー: ${e.message ?? e}`)
     } finally {
@@ -147,49 +164,80 @@ export function Record() {
     return t >= 1 ? `${t}s` : `1/${Math.round(1 / t)}`
   }
 
+  const selectedShot = selectedIndex !== null ? shots[selectedIndex] : null
+
   return (
     <div className={styles.wrap}>
+      {/* 左：写真グリッド */}
       <div className={styles.left}>
         <div className={styles.leftHead}>
           <span className={styles.sectionTitle}>PHOTOS<span>ベストショット</span></span>
           <span className={styles.date}>{date}</span>
         </div>
 
-        {shots.length < MAX_PHOTOS && (
-          <label className={styles.dropCell} style={{ display: 'block', cursor: 'pointer', marginBottom: 16 }}>
-            写真を選ぶ（残り{MAX_PHOTOS - shots.length}枚）
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              style={{ display: 'none' }}
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-          </label>
-        )}
-
         <div className={styles.grid}>
           {shots.map((s, i) => (
-            <div key={i} style={{ border: '1px solid #e5e5e5', borderRadius: 8, padding: 10 }}>
-              <img src={s.previewUrl} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover', borderRadius: 6 }} />
-              <div style={{ fontSize: 12, marginTop: 8, color: '#444', lineHeight: 1.7 }}>
-                <div>{s.model ?? '機種不明'}</div>
-                <div>{s.lensModel ?? 'レンズ不明'}</div>
-                <div style={{ fontFamily: 'monospace', color: '#0b6fa4' }}>
-                  {s.focalLength ? `${s.focalLength}mm` : '—'} ・ f/{s.fNumber ?? '—'} ・ {formatSS(s.exposureTime)} ・ ISO{s.iso ?? '—'}
-                </div>
-                <div style={{ color: '#999' }}>{s.takenAt ?? '撮影日時なし'}</div>
+            <div
+              key={i}
+              className={`${styles.photoCell} ${i === selectedIndex ? styles.photoSelected : ''}`}
+              onClick={() => setSelectedIndex(i)}
+            >
+              <div className={styles.photoImgWrap}>
+                <img src={s.previewUrl} alt="" className={styles.photoImg} />
+                <button
+                  className={styles.removeBtn}
+                  onClick={(e) => { e.stopPropagation(); removeShot(i) }}
+                >
+                  ×
+                </button>
               </div>
+              <div className={styles.photoTitle}>{s.title || 'タイトル未設定'}</div>
             </div>
           ))}
+
+          {/* 空き枠（4枚未満のとき、残りをドロップ枠で埋める） */}
+          {shots.length < MAX_PHOTOS && (
+            <label className={styles.dropCell} style={{ cursor: 'pointer' }}>
+              写真を選ぶ
+              <input type="file" accept="image/*" multiple style={{ display: 'none' }}
+                onChange={(e) => handleFiles(e.target.files)} />
+            </label>
+          )}
         </div>
       </div>
 
+      {/* 右：選択中の写真の設定 */}
       <div className={styles.right}>
+        {selectedShot ? (
+          <>
+            <div className={styles.field}>
+              <div className={styles.label}>TITLE<span>タイトル</span></div>
+              <input
+                className={styles.input}
+                placeholder="例: カクレクマノミ"
+                value={selectedShot.title}
+                onChange={(e) => updateTitle(e.target.value)}
+              />
+            </div>
+
+            {/* 参考：この写真のEXIF（読み取り専用） */}
+            <div className={styles.exifBox}>
+              <div>{selectedShot.model ?? '機種不明'}</div>
+              <div style={{ color: '#888' }}>{selectedShot.lensModel ?? 'レンズ不明'}</div>
+              <div style={{ fontFamily: 'monospace', color: '#0b6fa4' }}>
+                {selectedShot.focalLength ? `${selectedShot.focalLength}mm` : '—'} ・ f/{selectedShot.fNumber ?? '—'} ・ {formatSS(selectedShot.exposureTime)} ・ ISO{selectedShot.iso ?? '—'}
+              </div>
+            </div>
+          </>
+        ) : (
+          <p style={{ color: '#999' }}>写真を選ぶと、ここで設定できます。</p>
+        )}
+
         <div className={styles.field}>
           <div className={styles.label}>DATE<span>日付</span></div>
           <input type="date" className={styles.input} value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
+
         <button className={styles.saveBtn} onClick={saveRecord} disabled={saving}>
           {saving ? '保存中...' : '記録を保存'}
         </button>

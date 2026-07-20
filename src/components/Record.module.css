@@ -78,3 +78,61 @@
 .saveBtn:hover { background: #095a86; }
 .saveBtn:disabled { opacity: 0.5; cursor: default; }
 .message { color: #0b6fa4; font-size: 14px; }
+
+/* 写真セルの選択ハイライト用 */
+
+.photoCell {
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.photoCell:hover { border-color: #ccc; }
+.photoSelected { border-color: #0b6fa4; }
+.photoImg {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+.photoTitle {
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+}
+.exifBox {
+  font-size: 12px;
+  color: #444;
+  line-height: 1.7;
+  padding: 12px;
+  background: #f7f7f7;
+  border-radius: 6px;
+}
+
+/* ×ボタンのスタイル */
+
+.photoImgWrap {
+  position: relative;
+}
+.removeBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.removeBtn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
