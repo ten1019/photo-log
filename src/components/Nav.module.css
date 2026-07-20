@@ -1,0 +1,39 @@
+.nav {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #e5e5e5;
+  height: 56px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1a1a1a;
+  flex: 1;
+}
+.tabs {
+  display: flex;
+}
+.tab {
+  border: none;
+  background: none;
+  border-left: 1px solid #e5e5e5;
+  padding: 0 36px;
+  font-size: 15px;
+  color: #1a2b3c;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tab:hover {
+  background: #f7f7f7;
+}
+.active {
+  background: #0b6fa4;
+  color: #fff;
+}
+.active:hover {
+  background: #0b6fa4;
+}

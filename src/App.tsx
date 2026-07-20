@@ -1,21 +1,33 @@
+import { useState } from 'react'
 import { useAuth } from './lib/AuthContext'
 import { Auth } from './components/Auth'
 import { MyPage } from './components/MyPage'
-import { supabase } from './lib/supabase'
+import { Nav } from './components/Nav'
+import type { Screen } from './components/Nav'
 
 function App() {
   const { session, loading } = useAuth()
+  const [screen, setScreen] = useState<Screen>('mypage')
 
   if (loading) return <div style={{ padding: 40 }}>読み込み中...</div>
   if (!session) return <Auth />
 
   return (
-    <div style={{ fontFamily: 'sans-serif' }}>
-      <div style={{ padding: '12px 40px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
-        <span>{session.user.email}</span>
-        <button onClick={() => supabase.auth.signOut()}>ログアウト</button>
-      </div>
-      <MyPage />
+    <div>
+      <Nav current={screen} onChange={setScreen} />
+      {screen === 'home' && <Placeholder title="ホーム" />}
+      {screen === 'log' && <Placeholder title="ログ" />}
+      {screen === 'mypage' && <MyPage />}
+      {screen === 'record' && <Placeholder title="記録する" />}
+    </div>
+  )
+}
+
+// 未実装の画面の仮表示
+function Placeholder({ title }: { title: string }) {
+  return (
+    <div style={{ padding: 60, textAlign: 'center', color: '#999' }}>
+      {title}（準備中）
     </div>
   )
 }
