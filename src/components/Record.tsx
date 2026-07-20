@@ -48,6 +48,25 @@ export function Record() {
     loadGear()
   }, [])
 
+  // 写真を選んだとき、EXIF機材名に一致する登録機材があれば自動選択
+  useEffect(() => {
+    if (selectedIndex === null) return
+    const shot = shots[selectedIndex]
+    if (!shot) return
+
+    // まだボディ未選択で、EXIFに機種名があるとき
+    if (!shot.cameraId && shot.model) {
+      const match = cameras.find((c) => c.name === shot.model)
+      if (match) updateCamera(match.id)
+    }
+    // まだレンズ未選択で、EXIFにレンズ名があるとき
+    if (!shot.lensId && shot.lensModel) {
+      const match = lenses.find((l) => l.name === shot.lensModel)
+      if (match) updateLens(match.id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIndex, cameras, lenses])
+
   async function handleFiles(files: FileList | null) {
     if (!files) return
     const remaining = MAX_PHOTOS - shots.length
