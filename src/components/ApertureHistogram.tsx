@@ -23,7 +23,7 @@ export function ApertureHistogram({ apertures }: { apertures: number[] }) {
   const padding = { top: 4, right: 2, bottom: 10, left: 2 }
 
   const x = d3.scaleBand().domain(data.map((d) => d.label)).range([padding.left, width - padding.right]).padding(0.3)
-  const maxCount = d3.max(data, (d) => d.count) ?? 1
+  const maxCount = Math.max(d3.max(data, (d) => d.count) ?? 0, 1)
   const y = d3.scaleLinear().domain([0, maxCount]).range([height - padding.bottom, padding.top])
 
   return (
