@@ -5,6 +5,7 @@ import { FocalHistogram } from './FocalHistogram'
 import { ApertureHistogram } from './ApertureHistogram'
 import { TimeHistogram } from './TimeHistogram'
 import { YearHeatmap } from './YearHeatmap'
+import { RecentPhotos } from './RecentPhotos'
 
 type Photo = {
   taken_at: string | null
@@ -118,6 +119,8 @@ export function Home() {
         <TimeHistogram hours={hours} />
         <FocalHistogram focals={focals} />
       </div>
+
+      <RecentPhotos />
     </div>
   )
 }
