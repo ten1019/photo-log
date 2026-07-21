@@ -1,0 +1,24 @@
+.section { padding: 24px 32px; }
+.title { font-size: 13px; font-weight: 700; color: #1a2b3c; margin-bottom: 16px; }
+.title span { color: #999; font-weight: 400; font-size: 11px; margin-left: 8px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.card {
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+.img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; }
+.imgFallback { width: 100%; aspect-ratio: 3 / 2; background: #f0f0f0; }
+.meta { padding: 10px 12px; }
+.photoTitle { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 3px; }
+.mono { font-family: monospace; font-size: 11px; color: #037FB4; }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}

@@ -6,6 +6,7 @@ import { Nav } from './components/Nav'
 import { Record } from './components/Record'
 import type { Screen } from './components/Nav'
 import { Log } from './components/Log'
+import { Home } from './components/Home'
 
 function App() {
   const { session, loading } = useAuth()
@@ -17,7 +18,7 @@ function App() {
   return (
     <div>
       <Nav current={screen} onChange={setScreen} />
-      {screen === 'home' && <Placeholder title="ホーム" />}
+      {screen === 'home' && <Home />}
       {screen === 'log' && <Log/>}
       {screen === 'mypage' && <MyPage />}
       {screen === 'record' && <Record />}

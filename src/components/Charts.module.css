@@ -1,0 +1,43 @@
+.chartCard {
+  border: 1px solid #e5e5e5;
+  border-right: none;
+  padding: 22px 24px;
+}
+.chartCard:last-child { border-right: 1px solid #e5e5e5; }
+
+.chartTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a2b3c;
+  margin-bottom: 12px;
+}
+.chartTitle span {
+  color: #999;
+  font-weight: 400;
+  font-size: 11px;
+  margin-left: 8px;
+}
+.svg { width: 100%; height: auto; display: block; overflow: visible; }
+.bar { fill: #037FB4; }
+.barValue {
+  font-size: 3px;
+  fill: #333;
+  text-anchor: middle;
+  font-family: monospace;
+}
+.barLabel {
+  font-size: 3px;
+  fill: #999;
+  text-anchor: middle;
+}
+
+/*  ヒートマップのスタイル */
+
+.heatmapCard {
+  padding: 22px 24px;
+  border-bottom: 1px solid #e5e5e5;
+}
+.heatMonth {
+  font-size: 9px;
+  fill: #999;
+}
