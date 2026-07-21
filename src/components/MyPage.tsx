@@ -3,8 +3,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import styles from './MyPage.module.css'
 
-type Camera = { id: string; name: string; note: string | null; created_at: string }
-type Lens = { id: string; name: string; note: string | null; created_at: string }
+type Camera = { id: string; name: string; note: string | null; created_at: string; count: number }
+type Lens = { id: string; name: string; note: string | null; created_at: string; count: number }
 
 export function MyPage() {
   const { session } = useAuth()
@@ -16,18 +16,34 @@ export function MyPage() {
   const [lensNote, setLensNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [totalShots, setTotalShots] = useState(0)
 
   async function fetchCameras() {
-    const { data, error } = await supabase.from('cameras').select('*').order('created_at', { ascending: true })
+    const { data, error } = await supabase
+      .from('cameras')
+      .select('*, photos(count)')          // ← 紐づく写真の件数も取る
+      .order('created_at', { ascending: true })
     if (error) setError(error.message)
-    else setCameras(data ?? [])
+    else setCameras((data ?? []).map((c: any) => ({ ...c, count: c.photos?.[0]?.count ?? 0 })))
   }
+
   async function fetchLenses() {
-    const { data, error } = await supabase.from('lenses').select('*').order('created_at', { ascending: true })
+    const { data, error } = await supabase
+      .from('lenses')
+      .select('*, photos(count)')
+      .order('created_at', { ascending: true })
     if (error) setError(error.message)
-    else setLenses(data ?? [])
+    else setLenses((data ?? []).map((l: any) => ({ ...l, count: l.photos?.[0]?.count ?? 0 })))
   }
-  useEffect(() => { fetchCameras(); fetchLenses() }, [])
+
+  async function fetchTotalShots() {
+    const { count, error } = await supabase
+      .from('photos')
+      .select('*', { count: 'exact', head: true })
+    if (!error) setTotalShots(count ?? 0)
+  }
+
+  useEffect(() => { fetchCameras(); fetchLenses(); fetchTotalShots() }, [])
 
   async function addCamera() {
     if (!camName.trim()) return
@@ -79,7 +95,7 @@ export function MyPage() {
         </div>
         <div className={styles.metric}>
           <div className={styles.metricLabel}>TOTAL SHOTS</div>
-          <div className={styles.metricValue}>0<span className={styles.metricUnit}>枚</span></div>
+          <div className={styles.metricValue}>{totalShots}<span className={styles.metricUnit}>枚</span></div>
         </div>
         <div className={styles.metric}>
           <div className={styles.metricLabel}>SINCE</div>
@@ -103,7 +119,7 @@ export function MyPage() {
                     {c.note && <div className={styles.itemNote}>{c.note}</div>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span className={styles.itemCount}>0枚</span>
+                    <span className={styles.itemCount}>{c.count}枚</span>
                     <button className={styles.deleteBtn} onClick={() => deleteCamera(c.id)}>×</button>
                   </div>
                 </li>
@@ -137,7 +153,7 @@ export function MyPage() {
                     {l.note && <div className={styles.itemNote}>{l.note}</div>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span className={styles.itemCount}>0枚</span>
+                    <span className={styles.itemCount}>{l.count}枚</span>
                     <button className={styles.deleteBtn} onClick={() => deleteLens(l.id)}>×</button>
                   </div>
                 </li>
