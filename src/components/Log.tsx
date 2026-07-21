@@ -11,6 +11,7 @@ function todayKey() {
 type Photo = {
   id: string
   image_url: string
+  title: string | null
   camera_model: string | null
   lens_model: string | null
   focal_length: number | null
@@ -236,6 +237,7 @@ export function Log() {
                   <div className={styles.imgFallback}>画像を読み込めません</div>
                 )}
                 <div className={styles.exif}>
+                  {p.title && <span className={styles.photoTitle}>{p.title}</span>}
                   <span className={styles.model}>{p.camera_model ?? '機種不明'}</span>
                   <span className={styles.lens}>{p.lens_model ?? 'レンズ不明'}</span>
                   <span className={styles.mono}>

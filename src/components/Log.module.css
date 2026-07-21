@@ -33,6 +33,12 @@
 .model { font-size: 12px; color: #444; }
 .lens { font-size: 11px; color: #888; }
 .mono { font-family: monospace; font-size: 12px; color: #0b6fa4; }
+.photoTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 2px;
+}
 
 /*  最近のログのスタイル */
 
