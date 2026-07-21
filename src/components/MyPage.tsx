@@ -16,6 +16,7 @@ export function MyPage() {
   const [lensNote, setLensNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [totalShots, setTotalShots] = useState(0)
 
   async function fetchCameras() {
     const { data, error } = await supabase
@@ -35,7 +36,14 @@ export function MyPage() {
     else setLenses((data ?? []).map((l: any) => ({ ...l, count: l.photos?.[0]?.count ?? 0 })))
   }
 
-  useEffect(() => { fetchCameras(); fetchLenses() }, [])
+  async function fetchTotalShots() {
+    const { count, error } = await supabase
+      .from('photos')
+      .select('*', { count: 'exact', head: true })
+    if (!error) setTotalShots(count ?? 0)
+  }
+
+  useEffect(() => { fetchCameras(); fetchLenses(); fetchTotalShots() }, [])
 
   async function addCamera() {
     if (!camName.trim()) return
@@ -87,7 +95,7 @@ export function MyPage() {
         </div>
         <div className={styles.metric}>
           <div className={styles.metricLabel}>TOTAL SHOTS</div>
-          <div className={styles.metricValue}>0<span className={styles.metricUnit}>枚</span></div>
+          <div className={styles.metricValue}>{totalShots}<span className={styles.metricUnit}>枚</span></div>
         </div>
         <div className={styles.metric}>
           <div className={styles.metricLabel}>SINCE</div>
