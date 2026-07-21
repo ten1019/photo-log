@@ -151,6 +151,18 @@ export function Record() {
     setNewCamName(''); setNewCamNote(''); setShowCamForm(false)  // フォームを閉じる
   }
 
+  // EXIF名でボディ登録フォームを開く（名前を自動で入れる）
+  function openCamFormWithExif(name: string) {
+    setNewCamName(name)   // 名前を自動入力
+    setNewCamNote('')     // 補足は空
+    setShowCamForm(true)  // フォームを開く
+  }
+  function openLensFormWithExif(name: string) {
+    setNewLensName(name)
+    setNewLensNote('')
+    setShowLensForm(true)
+  }
+
   async function createLens() {
     if (!newLensName.trim()) return
     const { data, error } = await supabase
@@ -353,10 +365,11 @@ export function Record() {
 
               {/* EXIFに機種名があるのに、登録機材と一致してない場合 */}
               {selectedShot.model &&
-                !cameras.some((c) => c.name === selectedShot.model) && (
+                !cameras.some((c) => c.name === selectedShot.model) &&
+                !showCamForm && (
                   <button
                     className={styles.registerBtn}
-                    onClick={() => registerCameraFromExif(selectedShot.model!)}
+                    onClick={() => openCamFormWithExif(selectedShot.model!)}
                   >
                     ＋「{selectedShot.model}」を台帳に登録
                   </button>
@@ -392,12 +405,13 @@ export function Record() {
                   </div>
                 </div>
               )}
-              
+
               {selectedShot.lensModel &&
-                !lenses.some((l) => l.name === selectedShot.lensModel) && (
+                !lenses.some((l) => l.name === selectedShot.lensModel) &&
+                !showLensForm && (
                   <button
                     className={styles.registerBtn}
-                    onClick={() => registerLensFromExif(selectedShot.lensModel!)}
+                    onClick={() => openLensFormWithExif(selectedShot.lensModel!)}
                   >
                     ＋「{selectedShot.lensModel}」を台帳に登録
                   </button>
