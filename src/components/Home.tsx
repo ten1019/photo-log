@@ -4,6 +4,7 @@ import styles from './Home.module.css'
 import { FocalHistogram } from './FocalHistogram'
 import { ApertureHistogram } from './ApertureHistogram'
 import { TimeHistogram } from './TimeHistogram'
+import { YearHeatmap } from './YearHeatmap'
 
 type Photo = {
   taken_at: string | null
@@ -79,6 +80,15 @@ export function Home() {
     .filter((p) => p.taken_at)
     .map((p) => new Date(p.taken_at!).getHours())
 
+  // 各日の撮影枚数（"YYYY-MM-DD" → 枚数）
+  const dayCounts = new Map<string, number>()
+  photos.forEach((p) => {
+    if (!p.taken_at) return
+    const d = new Date(p.taken_at)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1)
+  })
+
   if (loading) return <div style={{ padding: 40 }}>読み込み中...</div>
 
   const metrics = [
@@ -100,6 +110,8 @@ export function Home() {
           </div>
         ))}
       </div>
+
+      <YearHeatmap dayCounts={dayCounts} />
 
       <div className={styles.charts}>
         <ApertureHistogram apertures={apertures} />

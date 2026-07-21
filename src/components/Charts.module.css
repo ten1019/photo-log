@@ -30,3 +30,14 @@
   fill: #999;
   text-anchor: middle;
 }
+
+/*  ヒートマップのスタイル */
+
+.heatmapCard {
+  padding: 22px 24px;
+  border-bottom: 1px solid #e5e5e5;
+}
+.heatMonth {
+  font-size: 9px;
+  fill: #999;
+}
