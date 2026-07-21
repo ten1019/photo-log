@@ -20,7 +20,7 @@ export function ApertureHistogram({ apertures }: { apertures: number[] }) {
 
   const width = 100
   const height = 55
-  const padding = { top: 20, right: 10, bottom: 24, left: 10 }
+  const padding = { top: 4, right: 2, bottom: 10, left: 2 }
 
   const x = d3.scaleBand().domain(data.map((d) => d.label)).range([padding.left, width - padding.right]).padding(0.3)
   const maxCount = d3.max(data, (d) => d.count) ?? 1
@@ -37,11 +37,11 @@ export function ApertureHistogram({ apertures }: { apertures: number[] }) {
           const barH = height - padding.bottom - barY
           return (
             <g key={d.label}>
-              <rect x={barX} y={barY} width={barW} height={barH} className={styles.bar} rx={2} />
+              <rect x={barX} y={barY} width={barW} height={barH} className={styles.bar} rx={0.6} />
               {d.count > 0 && (
-                <text x={barX + barW / 2} y={barY - 4} className={styles.barValue}>{d.count}</text>
+                <text x={barX + barW / 2} y={barY - 1.2} className={styles.barValue}>{d.count}</text>
               )}
-              <text x={barX + barW / 2} y={height - 8} className={styles.barLabel}>{d.label}</text>
+              <text x={barX + barW / 2} y={height - 3} className={styles.barLabel}>{d.label}</text>
             </g>
           )
         })}
