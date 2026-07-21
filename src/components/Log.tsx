@@ -14,6 +14,8 @@ type Photo = {
   title: string | null
   camera_model: string | null
   lens_model: string | null
+  cameras: { name: string } | null
+  lenses: { name: string } | null
   focal_length: number | null
   aperture: number | null
   exposure_time: number | null
@@ -88,7 +90,7 @@ export function Log() {
       // 2. その記録に紐づく写真を取得
       const { data: ph, error } = await supabase
         .from('photos')
-        .select('*')
+        .select('*, cameras(name), lenses(name)')
         .eq('day_record_id', rec.id)
         .order('taken_at', { ascending: true })
 
@@ -238,8 +240,8 @@ export function Log() {
                 )}
                 <div className={styles.exif}>
                   {p.title && <span className={styles.photoTitle}>{p.title}</span>}
-                  <span className={styles.model}>{p.camera_model ?? '機種不明'}</span>
-                  <span className={styles.lens}>{p.lens_model ?? 'レンズ不明'}</span>
+                  <span className={styles.model}>{p.cameras?.name ?? p.camera_model ?? '機種不明'}</span>
+                  <span className={styles.lens}>{p.lenses?.name ?? p.lens_model ?? 'レンズ不明'}</span>
                   <span className={styles.mono}>
                     {p.focal_length ? `${p.focal_length}mm` : '—'} ・ f/{p.aperture ?? '—'} ・ {formatSS(p.exposure_time)} ・ ISO{p.iso ?? '—'}
                   </span>

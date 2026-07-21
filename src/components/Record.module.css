@@ -151,3 +151,45 @@
   font-family: inherit;
 }
 .registerBtn:hover { background: #d8ebf6; }
+
+/*  ボディ・レンズ新規登録スタイル */
+
+.newBtn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 10px;
+  border: 1px dashed #b8ddf0;
+  background: none;
+  border-radius: 6px;
+  color: #037FB4;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.newBtn:hover { background: #f4fafd; }
+.newForm {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #f7fafc;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+}
+.newFormBtns { display: flex; gap: 8px; }
+.newFormBtns button {
+  margin-top: 0;        /* registerBtnのmargin-topを打ち消す */
+  padding: 9px 16px;    /* 2つとも同じpaddingに上書き */
+  font-size: 13px;
+}
+.cancelBtn {
+  padding: 8px 14px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #666;
+  font-family: inherit;
+}
