@@ -287,13 +287,10 @@ export function Record({ editDate }: { editDate?: string | null }) {
 
       if (existing) {
         recordId = existing.id
-        // タイトルが入力されていれば更新
-        if (eventName.trim()) {
-          await supabase
-            .from('day_records')
-            .update({ event_name: eventName.trim() })
-            .eq('id', recordId)
-        }
+        await supabase
+          .from('day_records')
+          .update({ event_name: eventName.trim() || null })
+          .eq('id', recordId)
       } else {
         const { data: created, error: recErr } = await supabase
           .from('day_records')
@@ -304,34 +301,49 @@ export function Record({ editDate }: { editDate?: string | null }) {
       }
 
       for (const s of shots) {
-        if (!s.file) continue 
-        const ext = s.file.name.split('.').pop() ?? 'jpg'
-        const path = `${userId}/${recordId}/${crypto.randomUUID()}.${ext}`
-        const { error: upErr } = await supabase.storage.from('photos').upload(path, s.file)
-        if (upErr) throw upErr
+        if (s.id) {
+          // --- 既存写真：タイトル・機材だけ更新 ---
+          const { error: updErr } = await supabase
+            .from('photos')
+            .update({
+              title: s.title.trim() || null,
+              camera_id: s.cameraId,
+              lens_id: s.lensId,
+            })
+            .eq('id', s.id)
+          if (updErr) throw updErr
+        } else if (s.file) {
+          // --- 新規写真：アップロード＋登録 ---
+          const ext = s.file.name.split('.').pop() ?? 'jpg'
+          const path = `${userId}/${recordId}/${crypto.randomUUID()}.${ext}`
+          const { error: upErr } = await supabase.storage.from('photos').upload(path, s.file)
+          if (upErr) throw upErr
 
-        const { error: insErr } = await supabase.from('photos').insert({
-          user_id: userId,
-          day_record_id: recordId,
-          image_url: path,
-          title: s.title.trim() || null,      // ★タイトルを保存
-          camera_id: s.cameraId,
-          lens_id: s.lensId,
-          camera_model: s.model ?? null,
-          lens_model: s.lensModel ?? null,
-          focal_length: s.focalLength ?? null,
-          aperture: s.fNumber ?? null,
-          exposure_time: s.exposureTime ?? null,
-          iso: s.iso ?? null,
-          taken_at: s.takenAtISO ?? null,
-        })
-        if (insErr) throw insErr
+          const { error: insErr } = await supabase.from('photos').insert({
+            user_id: userId,
+            day_record_id: recordId,
+            image_url: path,
+            title: s.title.trim() || null,
+            camera_id: s.cameraId,
+            lens_id: s.lensId,
+            camera_model: s.model ?? null,
+            lens_model: s.lensModel ?? null,
+            focal_length: s.focalLength ?? null,
+            aperture: s.fNumber ?? null,
+            exposure_time: s.exposureTime ?? null,
+            iso: s.iso ?? null,
+            taken_at: s.takenAtISO ?? null,
+          })
+          if (insErr) throw insErr
+        }
       }
 
-      setMessage(`保存しました（${shots.length}枚）`)
-      setShots([])
-      setSelectedIndex(null)
-      setEventName('') 
+      setMessage(isEditMode ? '変更を保存しました' : `保存しました（${shots.length}枚）`)
+      if (!isEditMode) {
+        setShots([])
+        setSelectedIndex(null)
+        setEventName('')
+      }
     } catch (e: any) {
       setMessage(`保存エラー: ${e.message ?? e}`)
     } finally {
