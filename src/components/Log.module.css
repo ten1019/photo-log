@@ -93,3 +93,16 @@
   font-family: inherit;
 }
 .deleteBtn:hover { background: #fdf0f0; border-color: #c0392b; }
+
+/*  日に対するタイトルのスタイル */
+
+.eventName {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-left: 16px;
+}
+.recentEvent {
+  font-size: 13px;
+  color: #666;
+}

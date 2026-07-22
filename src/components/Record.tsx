@@ -31,6 +31,7 @@ const MAX_PHOTOS = 4
 export function Record() {
   const { session } = useAuth()
   const [date, setDate] = useState(today())
+  const [eventName, setEventName] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [shots, setShots] = useState<Shot[]>([])
@@ -232,10 +233,20 @@ export function Record() {
       const { data: existing } = await supabase
         .from('day_records').select('id').eq('shot_date', date).maybeSingle()
 
-      if (existing) recordId = existing.id
-      else {
+      if (existing) {
+        recordId = existing.id
+        // タイトルが入力されていれば更新
+        if (eventName.trim()) {
+          await supabase
+            .from('day_records')
+            .update({ event_name: eventName.trim() })
+            .eq('id', recordId)
+        }
+      } else {
         const { data: created, error: recErr } = await supabase
-          .from('day_records').insert({ shot_date: date, user_id: userId }).select('id').single()
+          .from('day_records')
+          .insert({ shot_date: date, user_id: userId, event_name: eventName.trim() || null })
+          .select('id').single()
         if (recErr) throw recErr
         recordId = created.id
       }
@@ -267,6 +278,7 @@ export function Record() {
       setMessage(`保存しました（${shots.length}枚）`)
       setShots([])
       setSelectedIndex(null)
+      setEventName('') 
     } catch (e: any) {
       setMessage(`保存エラー: ${e.message ?? e}`)
     } finally {
@@ -329,7 +341,7 @@ export function Record() {
               <div className={styles.label}>TITLE<span>タイトル</span></div>
               <input
                 className={styles.input}
-                placeholder="例: カクレクマノミ"
+                placeholder="例: 夜景"
                 value={selectedShot.title}
                 onChange={(e) => updateTitle(e.target.value)}
               /> 
@@ -371,7 +383,7 @@ export function Record() {
                     className={styles.registerBtn}
                     onClick={() => openCamFormWithExif(selectedShot.model!)}
                   >
-                    ＋「{selectedShot.model}」を台帳に登録
+                    ＋「{selectedShot.model}」を新規登録
                   </button>
                 )}
             </div>
@@ -413,7 +425,7 @@ export function Record() {
                     className={styles.registerBtn}
                     onClick={() => openLensFormWithExif(selectedShot.lensModel!)}
                   >
-                    ＋「{selectedShot.lensModel}」を台帳に登録
+                    ＋「{selectedShot.lensModel}」を新規登録
                   </button>
                 )}
             </div>
@@ -434,6 +446,16 @@ export function Record() {
         <div className={styles.field}>
           <div className={styles.label}>DATE<span>日付</span></div>
           <input type="date" className={styles.input} value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+
+        <div className={styles.field}>
+          <div className={styles.label}>EVENT<span>この日のタイトル</span></div>
+          <input
+            className={styles.input}
+            placeholder="例: 東京観光"
+            value={eventName}
+            onChange={(e) => setEventName(e.target.value)}
+          />
         </div>
 
         <button className={styles.saveBtn} onClick={saveRecord} disabled={saving}>
