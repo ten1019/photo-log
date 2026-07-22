@@ -29,13 +29,14 @@ function formatSS(t: number | null) {
   return t >= 1 ? `${t}s` : `1/${Math.round(1 / t)}`
 }
 
-export function Log() {
+export function Log({ onEdit }: { onEdit: (date: string) => void }) {
   const [recordDates, setRecordDates] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<string>(todayKey())
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loadingPhotos, setLoadingPhotos] = useState(false)
-  const [recentRecords, setRecentRecords] = useState<{ id: string; shot_date: string; count: number }[]>([])
-  const [pinnedRecords, setPinnedRecords] = useState<{ id: string; shot_date: string }[]>([])
+  const [recentRecords, setRecentRecords] = useState<{ id: string; shot_date: string; event_name: string | null; count: number }[]>([])
+  const [pinnedRecords, setPinnedRecords] = useState<{ id: string; shot_date: string; event_name: string | null }[]>([])
+  const [eventName, setEventName] = useState<string | null>(null)
 
   // 記録がある日を取得（点の表示用）
   useEffect(() => {
@@ -48,7 +49,7 @@ export function Log() {
       // 最近の記録（写真の枚数付きで新しい順に5件）
       const { data: recent } = await supabase
         .from('day_records')
-        .select('id, shot_date, photos(count)')
+        .select('id, shot_date, event_name, photos(count)')
         .order('shot_date', { ascending: false })
         .limit(5)
 
@@ -56,6 +57,7 @@ export function Log() {
         (recent ?? []).map((r: any) => ({
           id: r.id,
           shot_date: r.shot_date,
+          event_name: r.event_name,
           count: r.photos?.[0]?.count ?? 0,
         }))
       )
@@ -63,7 +65,7 @@ export function Log() {
       // ピン留めした日
       const { data: pinned } = await supabase
         .from('day_records')
-        .select('id, shot_date')
+        .select('id, shot_date, event_name')
         .eq('pinned', true)
         .order('shot_date', { ascending: false })
       setPinnedRecords(pinned ?? [])
@@ -81,11 +83,12 @@ export function Log() {
       // 1. 選択日の day_record を探す
       const { data: rec } = await supabase
         .from('day_records')
-        .select('id')
+        .select('id, event_name')
         .eq('shot_date', selected)
         .maybeSingle()
 
       if (!rec) { setLoadingPhotos(false); return } // その日は記録なし
+      setEventName(rec.event_name)
 
       // 2. その記録に紐づく写真を取得
       const { data: ph, error } = await supabase
@@ -130,7 +133,7 @@ export function Log() {
     // ピン一覧を取り直す
     const { data: pinned } = await supabase
       .from('day_records')
-      .select('id, shot_date')
+      .select('id, shot_date, event_name')
       .eq('pinned', true)
       .order('shot_date', { ascending: false })
     setPinnedRecords(pinned ?? [])
@@ -201,6 +204,7 @@ export function Log() {
                   onClick={() => setSelected(p.shot_date)}
                 >
                   <span className={styles.recentDate}>★ {p.shot_date}</span>
+                  {p.event_name && <span className={styles.recentEvent}>{p.event_name}</span>}
                 </li>
               ))}
             </ul>
@@ -212,14 +216,17 @@ export function Log() {
       {/* 右：選択日の写真 */}
       <div className={styles.dayCol}>
         <div className={styles.dayHead}>
-          <h2 className={styles.dayTitle}>{selected}</h2>
+          <h2 className={styles.dayTitle}>
+            {selected}
+            {eventName && <span className={styles.eventName}>{eventName}</span>}
+          </h2>
           {recordDates.has(selected) && (
             <div style={{ display: 'flex', gap: 8 }}>
               <button className={styles.pinBtn} onClick={togglePin}>
                 {isSelectedPinned ? '★ ピン留め中' : '☆ ピン留め'}
               </button>
-              <button className={styles.deleteBtn} onClick={deleteRecord}>
-                削除
+              <button className={styles.editBtn} onClick={() => onEdit(selected)}>
+                編集
               </button>
             </div>
           )}
@@ -266,6 +273,7 @@ export function Log() {
                 >
                   <span className={styles.recentDate}>{r.shot_date}</span>
                   <span className={styles.recentCount}>{r.count}枚</span>
+                  {r.event_name && <span className={styles.recentEvent}>{r.event_name}</span>}
                 </li>
               ))}
             </ul>

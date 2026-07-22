@@ -93,3 +93,30 @@
   font-family: inherit;
 }
 .deleteBtn:hover { background: #fdf0f0; border-color: #c0392b; }
+
+/*  日に対するタイトルのスタイル */
+
+.eventName {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-left: 16px;
+}
+.recentEvent {
+  font-size: 13px;
+  color: #666;
+}
+
+/*  編集のスタイル */
+
+.editBtn {
+  border: 1px solid #b8ddf0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #037FB4;
+  font-family: inherit;
+}
+.editBtn:hover { background: #f4fafd; }

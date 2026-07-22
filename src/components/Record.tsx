@@ -9,7 +9,8 @@ function today() {
 }
 
 type Shot = {
-  file: File
+  id?: string
+  file?: File
   fileName: string
   previewUrl: string
   title: string            // ★写真ごとのタイトル
@@ -28,15 +29,17 @@ type Shot = {
 
 const MAX_PHOTOS = 4
 
-export function Record() {
+export function Record({ editDate }: { editDate?: string | null }) {
   const { session } = useAuth()
   const [date, setDate] = useState(today())
+  const [eventName, setEventName] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [shots, setShots] = useState<Shot[]>([])
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null) // ★選択中の写真
   const [cameras, setCameras] = useState<{ id: string; name: string }[]>([])
   const [lenses, setLenses] = useState<{ id: string; name: string; note: string | null }[]>([])
+  const [deletedPhotos, setDeletedPhotos] = useState<{ id: string; path: string }[]>([])
   // 新規登録フォームの開閉と入力
   const [showCamForm, setShowCamForm] = useState(false)
   const [newCamName, setNewCamName] = useState('')
@@ -54,6 +57,57 @@ export function Record() {
     }
     loadGear()
   }, [])
+
+  const isEditMode = !!editDate
+
+  // 編集モード：その日の記録を読み込んでフォームに入れる
+  useEffect(() => {
+    if (!editDate) return
+    async function loadExisting() {
+      setDate(editDate!)
+
+      const { data: rec } = await supabase
+        .from('day_records')
+        .select('id, event_name')
+        .eq('shot_date', editDate!)
+        .maybeSingle()
+      if (!rec) return
+      setEventName(rec.event_name ?? '')
+
+      const { data: ph } = await supabase
+        .from('photos')
+        .select('*')
+        .eq('day_record_id', rec.id)
+        .order('taken_at', { ascending: true })
+
+      const loaded: Shot[] = await Promise.all(
+        (ph ?? []).map(async (p: any) => {
+          const { data: signed } = await supabase.storage
+            .from('photos')
+            .createSignedUrl(p.image_url, 3600)
+          return {
+            id: p.id,
+            fileName: p.image_url,
+            previewUrl: signed?.signedUrl ?? '',
+            title: p.title ?? '',
+            cameraId: p.camera_id,
+            lensId: p.lens_id,
+            focalLength: p.focal_length ?? undefined,
+            fNumber: p.aperture ?? undefined,
+            exposureTime: p.exposure_time ?? undefined,
+            iso: p.iso ?? undefined,
+            takenAt: p.taken_at ?? undefined,
+            takenAtISO: p.taken_at ?? undefined,
+            model: p.camera_model ?? undefined,
+            lensModel: p.lens_model ?? undefined,
+          }
+        })
+      )
+      setShots(loaded)
+      if (loaded.length > 0) setSelectedIndex(0)
+    }
+    loadExisting()
+  }, [editDate])
 
   // 写真を選んだとき、EXIF機材名に一致する登録機材があれば自動選択
   useEffect(() => {
@@ -202,6 +256,12 @@ export function Record() {
 
   // 写真を1枚削除する（保存前なので配列から除くだけ）
   function removeShot(index: number) {
+    const target = shots[index]
+    // 既存写真なら、保存時に消すリストへ
+    if (target?.id) {
+      setDeletedPhotos((prev) => [...prev, { id: target.id!, path: target.fileName }])
+    }
+
     setShots((prev) => {
       const next = prev.filter((_, i) => i !== index)
 
@@ -222,7 +282,7 @@ export function Record() {
   }
 
   async function saveRecord() {
-    if (shots.length === 0) { setMessage('写真を1枚以上選んでください。'); return }
+    if (shots.length === 0 && deletedPhotos.length === 0) { setMessage('写真を1枚以上選んでください。'); return }
     setSaving(true)
     setMessage('')
     const userId = session!.user.id
@@ -232,46 +292,109 @@ export function Record() {
       const { data: existing } = await supabase
         .from('day_records').select('id').eq('shot_date', date).maybeSingle()
 
-      if (existing) recordId = existing.id
-      else {
+      if (existing) {
+        recordId = existing.id
+        await supabase
+          .from('day_records')
+          .update({ event_name: eventName.trim() || null })
+          .eq('id', recordId)
+      } else {
         const { data: created, error: recErr } = await supabase
-          .from('day_records').insert({ shot_date: date, user_id: userId }).select('id').single()
+          .from('day_records')
+          .insert({ shot_date: date, user_id: userId, event_name: eventName.trim() || null })
+          .select('id').single()
         if (recErr) throw recErr
         recordId = created.id
       }
 
       for (const s of shots) {
-        const ext = s.file.name.split('.').pop() ?? 'jpg'
-        const path = `${userId}/${recordId}/${crypto.randomUUID()}.${ext}`
-        const { error: upErr } = await supabase.storage.from('photos').upload(path, s.file)
-        if (upErr) throw upErr
+        if (s.id) {
+          // --- 既存写真：タイトル・機材だけ更新 ---
+          const { error: updErr } = await supabase
+            .from('photos')
+            .update({
+              title: s.title.trim() || null,
+              camera_id: s.cameraId,
+              lens_id: s.lensId,
+            })
+            .eq('id', s.id)
+          if (updErr) throw updErr
+        } else if (s.file) {
+          // --- 新規写真：アップロード＋登録 ---
+          const ext = s.file.name.split('.').pop() ?? 'jpg'
+          const path = `${userId}/${recordId}/${crypto.randomUUID()}.${ext}`
+          const { error: upErr } = await supabase.storage.from('photos').upload(path, s.file)
+          if (upErr) throw upErr
 
-        const { error: insErr } = await supabase.from('photos').insert({
-          user_id: userId,
-          day_record_id: recordId,
-          image_url: path,
-          title: s.title.trim() || null,      // ★タイトルを保存
-          camera_id: s.cameraId,
-          lens_id: s.lensId,
-          camera_model: s.model ?? null,
-          lens_model: s.lensModel ?? null,
-          focal_length: s.focalLength ?? null,
-          aperture: s.fNumber ?? null,
-          exposure_time: s.exposureTime ?? null,
-          iso: s.iso ?? null,
-          taken_at: s.takenAtISO ?? null,
-        })
-        if (insErr) throw insErr
+          const { error: insErr } = await supabase.from('photos').insert({
+            user_id: userId,
+            day_record_id: recordId,
+            image_url: path,
+            title: s.title.trim() || null,
+            camera_id: s.cameraId,
+            lens_id: s.lensId,
+            camera_model: s.model ?? null,
+            lens_model: s.lensModel ?? null,
+            focal_length: s.focalLength ?? null,
+            aperture: s.fNumber ?? null,
+            exposure_time: s.exposureTime ?? null,
+            iso: s.iso ?? null,
+            taken_at: s.takenAtISO ?? null,
+          })
+          if (insErr) throw insErr
+        }
       }
 
-      setMessage(`保存しました（${shots.length}枚）`)
-      setShots([])
-      setSelectedIndex(null)
+      // 削除された既存写真をDBとStorageから消す
+      if (deletedPhotos.length > 0) {
+        const paths = deletedPhotos.map((d) => d.path)
+        const { error: storageErr } = await supabase.storage.from('photos').remove(paths)
+        if (storageErr) console.error('画像の削除に失敗', storageErr)
+
+        const ids = deletedPhotos.map((d) => d.id)
+        const { error: delErr } = await supabase.from('photos').delete().in('id', ids)
+        if (delErr) throw delErr
+
+        setDeletedPhotos([])   // リセット
+      }
+
+      setMessage(isEditMode ? '変更を保存しました' : `保存しました（${shots.length}枚）`)
+      if (!isEditMode) {
+        setShots([])
+        setSelectedIndex(null)
+        setEventName('')
+      }
     } catch (e: any) {
       setMessage(`保存エラー: ${e.message ?? e}`)
     } finally {
       setSaving(false)
     }
+  }
+
+  // 削除関数
+
+  async function deleteWholeRecord() {
+    if (!editDate) return
+    if (!confirm(`${editDate} の記録を削除しますか？（写真も消えます）`)) return
+
+    const { data: rec } = await supabase
+      .from('day_records').select('id').eq('shot_date', editDate).maybeSingle()
+    if (!rec) return
+
+    const { data: ph } = await supabase
+      .from('photos').select('image_url').eq('day_record_id', rec.id)
+    const paths = (ph ?? []).map((p) => p.image_url)
+    if (paths.length > 0) {
+      await supabase.storage.from('photos').remove(paths)
+    }
+
+    const { error } = await supabase.from('day_records').delete().eq('id', rec.id)
+    if (error) { setMessage(error.message); return }
+
+    setMessage('記録を削除しました')
+    setShots([])
+    setSelectedIndex(null)
+    setEventName('')
   }
 
   function formatSS(t?: number) {
@@ -329,7 +452,7 @@ export function Record() {
               <div className={styles.label}>TITLE<span>タイトル</span></div>
               <input
                 className={styles.input}
-                placeholder="例: カクレクマノミ"
+                placeholder="例: 夜景"
                 value={selectedShot.title}
                 onChange={(e) => updateTitle(e.target.value)}
               /> 
@@ -371,7 +494,7 @@ export function Record() {
                     className={styles.registerBtn}
                     onClick={() => openCamFormWithExif(selectedShot.model!)}
                   >
-                    ＋「{selectedShot.model}」を台帳に登録
+                    ＋「{selectedShot.model}」を新規登録
                   </button>
                 )}
             </div>
@@ -413,7 +536,7 @@ export function Record() {
                     className={styles.registerBtn}
                     onClick={() => openLensFormWithExif(selectedShot.lensModel!)}
                   >
-                    ＋「{selectedShot.lensModel}」を台帳に登録
+                    ＋「{selectedShot.lensModel}」を新規登録
                   </button>
                 )}
             </div>
@@ -436,9 +559,24 @@ export function Record() {
           <input type="date" className={styles.input} value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
 
+        <div className={styles.field}>
+          <div className={styles.label}>EVENT<span>この日のタイトル</span></div>
+          <input
+            className={styles.input}
+            placeholder="例: 東京観光"
+            value={eventName}
+            onChange={(e) => setEventName(e.target.value)}
+          />
+        </div>
+
         <button className={styles.saveBtn} onClick={saveRecord} disabled={saving}>
-          {saving ? '保存中...' : '記録を保存'}
+          {saving ? '保存中...' : isEditMode ? '変更を保存' : '記録を保存'}
         </button>
+        {isEditMode && (
+          <button className={styles.deleteRecordBtn} onClick={deleteWholeRecord}>
+            この記録を削除
+          </button>
+        )}
         {message && <p className={styles.message}>{message}</p>}
       </div>
     </div>

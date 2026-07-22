@@ -17,6 +17,12 @@ export function MyPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [totalShots, setTotalShots] = useState(0)
+  const [editingCamId, setEditingCamId] = useState<string | null>(null)
+  const [editCamName, setEditCamName] = useState('')
+  const [editCamNote, setEditCamNote] = useState('')
+  const [editingLensId, setEditingLensId] = useState<string | null>(null)
+  const [editLensName, setEditLensName] = useState('')
+  const [editLensNote, setEditLensNote] = useState('')
 
   async function fetchCameras() {
     const { data, error } = await supabase
@@ -74,6 +80,40 @@ export function MyPage() {
     if (error) setError(error.message); else await fetchLenses()
   }
 
+  // 編集開始（その機材の現在値をフォームに入れる）
+  function startEditCamera(c: Camera) {
+    setEditingCamId(c.id)
+    setEditCamName(c.name)
+    setEditCamNote(c.note ?? '')
+  }
+  // 保存（更新）
+  async function saveCamera(id: string) {
+    if (!editCamName.trim()) return
+    const { error } = await supabase
+      .from('cameras')
+      .update({ name: editCamName.trim(), note: editCamNote.trim() || null })
+      .eq('id', id)
+    if (error) { setError(error.message); return }
+    setEditingCamId(null)
+    await fetchCameras()
+  }
+
+  function startEditLens(l: Lens) {
+    setEditingLensId(l.id)
+    setEditLensName(l.name)
+    setEditLensNote(l.note ?? '')
+  }
+  async function saveLens(id: string) {
+    if (!editLensName.trim()) return
+    const { error } = await supabase
+      .from('lenses')
+      .update({ name: editLensName.trim(), note: editLensNote.trim() || null })
+      .eq('id', id)
+    if (error) { setError(error.message); return }
+    setEditingLensId(null)
+    await fetchLenses()
+  }
+
   // ボディ・レンズの中で一番古い登録日の「年」を求める
   const allDates = [...cameras, ...lenses].map((x) => x.created_at)
   const sinceYear =
@@ -114,14 +154,32 @@ export function MyPage() {
             <ul className={styles.list}>
               {cameras.map((c) => (
                 <li key={c.id} className={styles.item}>
-                  <div>
-                    <div className={styles.itemName}>{c.name}</div>
-                    {c.note && <div className={styles.itemNote}>{c.note}</div>}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span className={styles.itemCount}>{c.count}枚</span>
-                    <button className={styles.deleteBtn} onClick={() => deleteCamera(c.id)}>×</button>
-                  </div>
+                  {editingCamId === c.id ? (
+                    // 編集モード
+                    <div className={styles.editForm}>
+                      <input className={styles.input} value={editCamName}
+                        onChange={(e) => setEditCamName(e.target.value)} placeholder="ボディ名" />
+                      <input className={styles.input} value={editCamNote}
+                        onChange={(e) => setEditCamNote(e.target.value)} placeholder="補足" />
+                      <div className={styles.editBtns}>
+                        <button className={styles.saveEditBtn} onClick={() => saveCamera(c.id)}>保存</button>
+                        <button className={styles.cancelBtn} onClick={() => setEditingCamId(null)}>取消</button>
+                        <button className={styles.deleteInEdit} onClick={() => deleteCamera(c.id)}>削除</button>
+                      </div>
+                    </div>
+                  ) : (
+                    // 表示モード
+                    <>
+                      <div>
+                        <div className={styles.itemName}>{c.name}</div>
+                        {c.note && <div className={styles.itemNote}>{c.note}</div>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className={styles.itemCount}>{c.count}枚</span>
+                        <button className={styles.editBtn} onClick={() => startEditCamera(c)}>編集</button>
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -148,14 +206,30 @@ export function MyPage() {
             <ul className={styles.list}>
               {lenses.map((l) => (
                 <li key={l.id} className={styles.item}>
-                  <div>
-                    <div className={styles.itemName}>{l.name}</div>
-                    {l.note && <div className={styles.itemNote}>{l.note}</div>}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span className={styles.itemCount}>{l.count}枚</span>
-                    <button className={styles.deleteBtn} onClick={() => deleteLens(l.id)}>×</button>
-                  </div>
+                  {editingLensId === l.id ? (
+                    <div className={styles.editForm}>
+                      <input className={styles.input} value={editLensName}
+                        onChange={(e) => setEditLensName(e.target.value)} placeholder="レンズ名" />
+                      <input className={styles.input} value={editLensNote}
+                        onChange={(e) => setEditLensNote(e.target.value)} placeholder="補足" />
+                      <div className={styles.editBtns}>
+                        <button className={styles.saveEditBtn} onClick={() => saveLens(l.id)}>保存</button>
+                        <button className={styles.cancelBtn} onClick={() => setEditingLensId(null)}>取消</button>
+                        <button className={styles.deleteInEdit} onClick={() => deleteLens(l.id)}>削除</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <div className={styles.itemName}>{l.name}</div>
+                        {l.note && <div className={styles.itemNote}>{l.note}</div>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className={styles.itemCount}>{l.count}枚</span>
+                        <button className={styles.editBtn} onClick={() => startEditLens(l)}>編集</button>
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

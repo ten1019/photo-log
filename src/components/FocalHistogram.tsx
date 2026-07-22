@@ -34,7 +34,7 @@ export function FocalHistogram({ focals }: { focals: number[] }) {
     .padding(0.3)                            // 棒どうしの隙間
 
   // 縦：枚数を高さに変換する scale
-  const maxCount = d3.max(data, (d) => d.count) ?? 1
+  const maxCount = Math.max(d3.max(data, (d) => d.count) ?? 0, 1)
   const y = d3
     .scaleLinear()
     .domain([0, maxCount])                   // 入力：0〜最大枚数
