@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import styles from './Auth.module.css'
 
 export function Auth() {
   const [email, setEmail] = useState('')
@@ -22,31 +23,42 @@ export function Auth() {
   }
 
   return (
-    <div style={{ maxWidth: 320, margin: '80px auto', fontFamily: 'sans-serif' }}>
-      <h1 style={{ fontSize: 20 }}>{mode === 'login' ? 'ログイン' : '新規登録'}</h1>
-      <input
-        style={{ display: 'block', width: '100%', margin: '8px 0', padding: 8 }}
-        type="email" placeholder="メールアドレス"
-        value={email} onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        style={{ display: 'block', width: '100%', margin: '8px 0', padding: 8 }}
-        type="password" placeholder="パスワード"
-        value={password} onChange={(e) => setPassword(e.target.value)}
-      />
-      <button style={{ width: '100%', padding: 8 }} onClick={handleSubmit} disabled={loading}>
-        {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '登録する'}
-      </button>
-      {message && <p style={{ color: 'crimson', fontSize: 13 }}>{message}</p>}
-      <p style={{ fontSize: 13, marginTop: 16 }}>
-        {mode === 'login' ? 'アカウントがない？' : 'すでに登録済み？'}{' '}
-        <button
-          style={{ border: 'none', background: 'none', color: 'blue', cursor: 'pointer', padding: 0 }}
-          onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage('') }}
-        >
-          {mode === 'login' ? '新規登録' : 'ログイン'}
+    <div className={styles.wrap}>
+      <div className={styles.brand}>PHOTO LOG</div>
+      <div className={styles.title}>{mode === 'login' ? 'ログイン' : '新規登録'}</div>
+
+      <div className={styles.form}>
+        <input
+          className={styles.input}
+          type="email"
+          placeholder="メールアドレス"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          className={styles.input}
+          type="password"
+          placeholder="パスワード"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
+        />
+        <button className={styles.submit} onClick={handleSubmit} disabled={loading}>
+          {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '登録する'}
         </button>
-      </p>
+
+        {message && <p className={styles.message}>{message}</p>}
+
+        <p className={styles.switch}>
+          {mode === 'login' ? 'アカウントが無い？' : 'すでに登録済み？'}
+          <button
+            className={styles.switchBtn}
+            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage('') }}
+          >
+            {mode === 'login' ? '新規登録' : 'ログイン'}
+          </button>
+        </p>
+      </div>
     </div>
   )
 }
