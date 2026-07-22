@@ -39,6 +39,7 @@ export function Record({ editDate }: { editDate?: string | null }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null) // ★選択中の写真
   const [cameras, setCameras] = useState<{ id: string; name: string }[]>([])
   const [lenses, setLenses] = useState<{ id: string; name: string; note: string | null }[]>([])
+  const [deletedPhotos, setDeletedPhotos] = useState<{ id: string; path: string }[]>([])
   // 新規登録フォームの開閉と入力
   const [showCamForm, setShowCamForm] = useState(false)
   const [newCamName, setNewCamName] = useState('')
@@ -255,6 +256,12 @@ export function Record({ editDate }: { editDate?: string | null }) {
 
   // 写真を1枚削除する（保存前なので配列から除くだけ）
   function removeShot(index: number) {
+    const target = shots[index]
+    // 既存写真なら、保存時に消すリストへ
+    if (target?.id) {
+      setDeletedPhotos((prev) => [...prev, { id: target.id!, path: target.fileName }])
+    }
+
     setShots((prev) => {
       const next = prev.filter((_, i) => i !== index)
 
@@ -275,7 +282,7 @@ export function Record({ editDate }: { editDate?: string | null }) {
   }
 
   async function saveRecord() {
-    if (shots.length === 0) { setMessage('写真を1枚以上選んでください。'); return }
+    if (shots.length === 0 && deletedPhotos.length === 0) { setMessage('写真を1枚以上選んでください。'); return }
     setSaving(true)
     setMessage('')
     const userId = session!.user.id
@@ -338,6 +345,19 @@ export function Record({ editDate }: { editDate?: string | null }) {
         }
       }
 
+      // 削除された既存写真をDBとStorageから消す
+      if (deletedPhotos.length > 0) {
+        const paths = deletedPhotos.map((d) => d.path)
+        const { error: storageErr } = await supabase.storage.from('photos').remove(paths)
+        if (storageErr) console.error('画像の削除に失敗', storageErr)
+
+        const ids = deletedPhotos.map((d) => d.id)
+        const { error: delErr } = await supabase.from('photos').delete().in('id', ids)
+        if (delErr) throw delErr
+
+        setDeletedPhotos([])   // リセット
+      }
+
       setMessage(isEditMode ? '変更を保存しました' : `保存しました（${shots.length}枚）`)
       if (!isEditMode) {
         setShots([])
@@ -349,6 +369,32 @@ export function Record({ editDate }: { editDate?: string | null }) {
     } finally {
       setSaving(false)
     }
+  }
+
+  // 削除関数
+
+  async function deleteWholeRecord() {
+    if (!editDate) return
+    if (!confirm(`${editDate} の記録を削除しますか？（写真も消えます）`)) return
+
+    const { data: rec } = await supabase
+      .from('day_records').select('id').eq('shot_date', editDate).maybeSingle()
+    if (!rec) return
+
+    const { data: ph } = await supabase
+      .from('photos').select('image_url').eq('day_record_id', rec.id)
+    const paths = (ph ?? []).map((p) => p.image_url)
+    if (paths.length > 0) {
+      await supabase.storage.from('photos').remove(paths)
+    }
+
+    const { error } = await supabase.from('day_records').delete().eq('id', rec.id)
+    if (error) { setMessage(error.message); return }
+
+    setMessage('記録を削除しました')
+    setShots([])
+    setSelectedIndex(null)
+    setEventName('')
   }
 
   function formatSS(t?: number) {
@@ -526,6 +572,11 @@ export function Record({ editDate }: { editDate?: string | null }) {
         <button className={styles.saveBtn} onClick={saveRecord} disabled={saving}>
           {saving ? '保存中...' : isEditMode ? '変更を保存' : '記録を保存'}
         </button>
+        {isEditMode && (
+          <button className={styles.deleteRecordBtn} onClick={deleteWholeRecord}>
+            この記録を削除
+          </button>
+        )}
         {message && <p className={styles.message}>{message}</p>}
       </div>
     </div>
