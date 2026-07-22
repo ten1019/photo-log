@@ -35,13 +35,4 @@ function App() {
   )
 }
 
-// 未実装の画面の仮表示
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div style={{ padding: 60, textAlign: 'center', color: '#999' }}>
-      {title}（準備中）
-    </div>
-  )
-}
-
 export default App
