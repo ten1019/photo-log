@@ -249,6 +249,13 @@ export function MyPage() {
       </div>
 
       {error && <p style={{ color: 'crimson', fontSize: 13, padding: 16 }}>{error}</p>}
+
+      <div className={styles.accountSection}>
+        <span className={styles.accountEmail}>{session?.user.email}</span>
+        <button className={styles.logoutBtn} onClick={() => supabase.auth.signOut()}>
+          ログアウト
+        </button>
+      </div>
     </div>
   )
 }

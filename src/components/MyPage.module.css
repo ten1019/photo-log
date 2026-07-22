@@ -146,3 +146,25 @@
   border-color: #e5c2c2 !important;
   margin-left: auto;    /* 削除だけ右端に離す */
 }
+
+/*  ログアウトのスタイル */
+.accountSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  border-top: 1px solid #e5e5e5;
+  margin-top: 20px;
+}
+.accountEmail { font-size: 13px; color: #888; }
+.logoutBtn {
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  font-family: inherit;
+}
+.logoutBtn:hover { border-color: #c0392b; color: #c0392b; }
