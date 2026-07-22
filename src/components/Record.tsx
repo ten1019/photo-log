@@ -9,7 +9,8 @@ function today() {
 }
 
 type Shot = {
-  file: File
+  id?: string
+  file?: File
   fileName: string
   previewUrl: string
   title: string            // ★写真ごとのタイトル
@@ -28,7 +29,7 @@ type Shot = {
 
 const MAX_PHOTOS = 4
 
-export function Record() {
+export function Record({ editDate }: { editDate?: string | null }) {
   const { session } = useAuth()
   const [date, setDate] = useState(today())
   const [eventName, setEventName] = useState('')
@@ -55,6 +56,57 @@ export function Record() {
     }
     loadGear()
   }, [])
+
+  const isEditMode = !!editDate
+
+  // 編集モード：その日の記録を読み込んでフォームに入れる
+  useEffect(() => {
+    if (!editDate) return
+    async function loadExisting() {
+      setDate(editDate!)
+
+      const { data: rec } = await supabase
+        .from('day_records')
+        .select('id, event_name')
+        .eq('shot_date', editDate!)
+        .maybeSingle()
+      if (!rec) return
+      setEventName(rec.event_name ?? '')
+
+      const { data: ph } = await supabase
+        .from('photos')
+        .select('*')
+        .eq('day_record_id', rec.id)
+        .order('taken_at', { ascending: true })
+
+      const loaded: Shot[] = await Promise.all(
+        (ph ?? []).map(async (p: any) => {
+          const { data: signed } = await supabase.storage
+            .from('photos')
+            .createSignedUrl(p.image_url, 3600)
+          return {
+            id: p.id,
+            fileName: p.image_url,
+            previewUrl: signed?.signedUrl ?? '',
+            title: p.title ?? '',
+            cameraId: p.camera_id,
+            lensId: p.lens_id,
+            focalLength: p.focal_length ?? undefined,
+            fNumber: p.aperture ?? undefined,
+            exposureTime: p.exposure_time ?? undefined,
+            iso: p.iso ?? undefined,
+            takenAt: p.taken_at ?? undefined,
+            takenAtISO: p.taken_at ?? undefined,
+            model: p.camera_model ?? undefined,
+            lensModel: p.lens_model ?? undefined,
+          }
+        })
+      )
+      setShots(loaded)
+      if (loaded.length > 0) setSelectedIndex(0)
+    }
+    loadExisting()
+  }, [editDate])
 
   // 写真を選んだとき、EXIF機材名に一致する登録機材があれば自動選択
   useEffect(() => {
@@ -252,6 +304,7 @@ export function Record() {
       }
 
       for (const s of shots) {
+        if (!s.file) continue 
         const ext = s.file.name.split('.').pop() ?? 'jpg'
         const path = `${userId}/${recordId}/${crypto.randomUUID()}.${ext}`
         const { error: upErr } = await supabase.storage.from('photos').upload(path, s.file)
@@ -459,7 +512,7 @@ export function Record() {
         </div>
 
         <button className={styles.saveBtn} onClick={saveRecord} disabled={saving}>
-          {saving ? '保存中...' : '記録を保存'}
+          {saving ? '保存中...' : isEditMode ? '変更を保存' : '記録を保存'}
         </button>
         {message && <p className={styles.message}>{message}</p>}
       </div>

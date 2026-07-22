@@ -106,3 +106,17 @@
   font-size: 13px;
   color: #666;
 }
+
+/*  編集のスタイル */
+
+.editBtn {
+  border: 1px solid #b8ddf0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #037FB4;
+  font-family: inherit;
+}
+.editBtn:hover { background: #f4fafd; }

@@ -29,7 +29,7 @@ function formatSS(t: number | null) {
   return t >= 1 ? `${t}s` : `1/${Math.round(1 / t)}`
 }
 
-export function Log() {
+export function Log({ onEdit }: { onEdit: (date: string) => void }) {
   const [recordDates, setRecordDates] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<string>(todayKey())
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -225,8 +225,8 @@ export function Log() {
               <button className={styles.pinBtn} onClick={togglePin}>
                 {isSelectedPinned ? '★ ピン留め中' : '☆ ピン留め'}
               </button>
-              <button className={styles.deleteBtn} onClick={deleteRecord}>
-                削除
+              <button className={styles.editBtn} onClick={() => onEdit(selected)}>
+                編集
               </button>
             </div>
           )}
